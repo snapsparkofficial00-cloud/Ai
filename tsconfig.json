@@ -1,1 +1,3 @@
-{"compileroptions":{"ignoredeprecations":"6.0}}
+{} > tsconfig.json
+.
+echo {}
