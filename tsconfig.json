@@ -1,1 +1,1 @@
-{"compileroptions":{"ignoreDeprecations":"6.0"}}
+{"compilerOptions":{"ignoreDeprations":"6.0","moduleResolutions":"bundler"}}
