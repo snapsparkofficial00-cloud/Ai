@@ -1,0 +1,383 @@
+"use client";
+
+import { useState } from "react";
+
+export default function AssistantPage() {
+
+  const [command, setCommand] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  const [response, setResponse] = useState("");
+
+  async function executeCommand() {
+
+    if (!command) return;
+
+    setLoading(true);
+
+    try {
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          message:
+            "Execute this AI OS command: " + command,
+        }),
+      });
+
+      const data = await res.json();
+
+      setResponse(data.reply);
+
+    } catch (err) {
+
+      setResponse("❌ AI COMMAND ERROR");
+
+    }
+
+    setLoading(false);
+  }
+
+  return (
+    <main
+      style={{
+        background: "#020617",
+        minHeight: "100vh",
+        color: "white",
+        padding: "40px",
+        fontFamily: "Arial",
+      }}
+    >
+
+      {/* HEADER */}
+
+      <h1
+        style={{
+          fontSize: "60px",
+          marginBottom: "20px",
+        }}
+      >
+        🤖 AI Assistant Core
+      </h1>
+
+      <p
+        style={{
+          color: "#94a3b8",
+          fontSize: "22px",
+          marginBottom: "40px",
+          lineHeight: "1.8",
+        }}
+      >
+        Central intelligence system controlling autonomous
+        AI agents, automation workflows, analytics,
+        memory systems, and future cloud operations.
+      </p>
+
+      {/* STATUS */}
+
+      <div
+        style={{
+          background: "#0f172a",
+          padding: "30px",
+          borderRadius: "24px",
+          marginBottom: "30px",
+          border: "1px solid #1e293b",
+        }}
+      >
+
+        <h2
+          style={{
+            fontSize: "32px",
+            marginBottom: "20px",
+          }}
+        >
+          🟢 System Status
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit,minmax(250px,1fr))",
+            gap: "20px",
+          }}
+        >
+
+          <Card title="AI Status" value="ONLINE" />
+          <Card title="Agents Running" value="12" />
+          <Card title="Tasks Active" value="128" />
+          <Card title="Cloud Sync" value="ACTIVE" />
+
+        </div>
+
+      </div>
+
+      {/* COMMAND CENTER */}
+
+      <div
+        style={{
+          background: "#0f172a",
+          padding: "30px",
+          borderRadius: "24px",
+          border: "1px solid #1e293b",
+          marginBottom: "30px",
+        }}
+      >
+
+        <h2
+          style={{
+            fontSize: "32px",
+            marginBottom: "20px",
+          }}
+        >
+          ⚡ AI Command Center
+        </h2>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "15px",
+            flexWrap: "wrap",
+          }}
+        >
+
+          <input
+            value={command}
+            onChange={(e) =>
+              setCommand(e.target.value)
+            }
+            placeholder="Type AI command..."
+            style={{
+              flex: 1,
+              padding: "18px",
+              borderRadius: "14px",
+              border: "none",
+              background: "#111827",
+              color: "white",
+              fontSize: "18px",
+            }}
+          />
+
+          <button
+            onClick={executeCommand}
+            style={{
+              background:
+                "linear-gradient(to right,#2563eb,#38bdf8)",
+              padding: "16px 28px",
+              borderRadius: "14px",
+              border: "none",
+              color: "white",
+              fontSize: "18px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            {loading
+              ? "🤖 Executing..."
+              : "🚀 Execute"}
+          </button>
+
+        </div>
+
+        {/* RESPONSE */}
+
+        <div
+          style={{
+            marginTop: "25px",
+            background: "#020617",
+            padding: "25px",
+            borderRadius: "18px",
+            minHeight: "180px",
+            border: "1px solid #1e293b",
+            color: "#38bdf8",
+            whiteSpace: "pre-wrap",
+            lineHeight: "1.8",
+          }}
+        >
+
+          {loading
+            ? "⚡ AI OS processing command..."
+            : response || "AI response appears here..."}
+
+        </div>
+
+      </div>
+
+      {/* QUICK COMMANDS */}
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "15px",
+          marginBottom: "40px",
+        }}
+      >
+
+        {[
+          "Run YouTube AI",
+          "Generate Viral Shorts",
+          "Start Instagram Automation",
+          "Create AI Website",
+          "Generate Revenue Plan",
+          "Analyze YouTube Growth",
+        ].map((cmd, index) => (
+
+          <button
+            key={index}
+            onClick={() => {
+              setCommand(cmd);
+              executeCommand();
+            }}
+            style={{
+              background: "#111827",
+              border: "1px solid #1e293b",
+              color: "white",
+              padding: "14px 22px",
+              borderRadius: "14px",
+              cursor: "pointer",
+            }}
+          >
+            ⚡ {cmd}
+          </button>
+
+        ))}
+
+      </div>
+
+      {/* AI MODULES */}
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit,minmax(300px,1fr))",
+          gap: "25px",
+        }}
+      >
+
+        <Module
+          title="📺 YouTube AI"
+          desc="Video automation and uploads."
+        />
+
+        <Module
+          title="📸 Instagram AI"
+          desc="Reels, captions and growth."
+        />
+
+        <Module
+          title="🎬 Video AI"
+          desc="Professional editing workflows."
+        />
+
+        <Module
+          title="💰 Revenue AI"
+          desc="Monetization optimization engine."
+        />
+
+        <Module
+          title="🧠 Memory AI"
+          desc="Self-learning intelligence storage."
+        />
+
+        <Module
+          title="🌐 Website Builder AI"
+          desc="Autonomous web generation."
+        />
+
+      </div>
+
+    </main>
+  );
+}
+
+/* CARD */
+
+function Card({
+  title,
+  value,
+}: {
+  title: string;
+  value: string;
+}) {
+
+  return (
+    <div
+      style={{
+        background: "#111827",
+        padding: "24px",
+        borderRadius: "18px",
+      }}
+    >
+
+      <h3
+        style={{
+          marginBottom: "12px",
+          color: "#94a3b8",
+        }}
+      >
+        {title}
+      </h3>
+
+      <p
+        style={{
+          fontSize: "30px",
+          fontWeight: "bold",
+        }}
+      >
+        {value}
+      </p>
+
+    </div>
+  );
+}
+
+/* MODULE */
+
+function Module({
+  title,
+  desc,
+}: {
+  title: string;
+  desc: string;
+}) {
+
+  return (
+    <div
+      style={{
+        background: "#0f172a",
+        padding: "28px",
+        borderRadius: "24px",
+        border: "1px solid #1e293b",
+      }}
+    >
+
+      <h2
+        style={{
+          fontSize: "28px",
+          marginBottom: "14px",
+        }}
+      >
+        {title}
+      </h2>
+
+      <p
+        style={{
+          color: "#94a3b8",
+          lineHeight: "1.8",
+          fontSize: "18px",
+        }}
+      >
+        {desc}
+      </p>
+
+    </div>
+  );
+}
