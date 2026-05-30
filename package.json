@@ -12,7 +12,6 @@
     "@supabase/supabase-js": "^2.106.2",
     "axios": "^1.16.1",
     "chrome-aws-lambda": "^10.1.0",
-    "edge-tts": "^1.0.1",
     "framer-motion": "^12.40.0",
     "groq-sdk": "^1.2.1",
     "ioredis": "^5.11.0",
