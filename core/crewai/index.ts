@@ -17,15 +17,6 @@ export interface WorkflowResult {
   channelHealth?: any;
 }
 
-export interface CREAWIConfig {
-  niche: string;
-  type: "short" | "long";
-  autoSchedule?: boolean;
-  qualityThreshold?: number;
-  maxRetries?: number;
-}
-
-// Mock functions for now - will be replaced with real implementations
 export async function runCEOStrategy(niche: string): Promise<any> {
   return {
     success: true,
