@@ -65,19 +65,27 @@ export default function CEOPage() {
       const systemData = await systemRes.json();
       const healthData = await healthRes.json();
 
-      if (systemData?.stats) {
+      // Fix: Check if systemData exists and has stats property
+      if (systemData && systemData.stats) {
         setCeoStats(prev => ({
           ...prev,
           activeAgents: systemData.stats.totalAgents || 11,
           tasksCompleted: systemData.stats.completedTasks || 0,
         }));
       }
-
-      if (healthData?.health) {
+      
+      // Fix: Check if healthData exists and has health property
+      if (healthData && healthData.health) {
         setCeoStats(prev => ({
           ...prev,
           youtubeSubs: healthData.health.metrics?.subscriberGrowth || 66,
           totalViews: healthData.health.metrics?.viewVelocity * 100 || 20091,
+        }));
+      } else if (healthData && healthData.channelHealth) {
+        setCeoStats(prev => ({
+          ...prev,
+          youtubeSubs: healthData.channelHealth.metrics?.subscriberGrowth || 66,
+          totalViews: healthData.channelHealth.metrics?.viewVelocity * 100 || 20091,
         }));
       }
     } catch (error) {
@@ -117,12 +125,6 @@ export default function CEOPage() {
       };
       setMessages(prev => [...prev, ceoMessage]);
 
-      // Update stats if action modified them
-      if (data.updatedStats) {
-        setCeoStats(prev => ({ ...prev, ...data.updatedStats }));
-      }
-
-      // Auto-suggest follow-up actions
       if (data.suggestions) {
         setSuggestions(data.suggestions);
       }
@@ -236,25 +238,23 @@ export default function CEOPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "12px",
             marginBottom: "24px",
           }}
         >
           <StatCard title="🟢 AI Status" value="ONLINE" color="#22c55e" live />
           <StatCard title="👑 Active Agent" value="CEO AI" color="#38bdf8" />
           <StatCard title="🤖 Active Agents" value={ceoStats.activeAgents.toString()} color="#a855f7" />
-          <StatCard title="✅ Tasks Completed" value={ceoStats.tasksCompleted.toLocaleString()} color="#22c55e" />
-          <StatCard title="🎬 Videos Generated" value={ceoStats.videosGenerated.toString()} color="#f59e0b" />
-          <StatCard title="👥 YouTube Subs" value={ceoStats.youtubeSubs.toLocaleString()} color="#ef4444" />
-          <StatCard title="📺 Total Views" value={ceoStats.totalViews.toLocaleString()} color="#38bdf8" />
-          <StatCard title="💰 Revenue" value={`$${ceoStats.revenue.toLocaleString()}`} color="#22c55e" />
+          <StatCard title="✅ Tasks" value={ceoStats.tasksCompleted.toLocaleString()} color="#22c55e" />
+          <StatCard title="🎬 Videos" value={ceoStats.videosGenerated.toString()} color="#f59e0b" />
+          <StatCard title="👥 Subs" value={ceoStats.youtubeSubs.toLocaleString()} color="#ef4444" />
         </div>
 
         {/* Niche Selector */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ color: "#64748b", fontSize: "14px", display: "block", marginBottom: "8px" }}>
-            🎯 Active Niche / Channel
+            🎯 Active Niche
           </label>
           <select
             value={selectedNiche}
@@ -283,8 +283,8 @@ export default function CEOPage() {
             background: "#0f172a",
             borderRadius: "20px",
             padding: "20px",
-            height: "calc(100vh - 380px)",
-            minHeight: "400px",
+            height: "calc(100vh - 420px)",
+            minHeight: "350px",
             overflowY: "auto",
             marginBottom: "20px",
             border: "1px solid #1e293b",
@@ -296,30 +296,25 @@ export default function CEOPage() {
             <div
               key={index}
               style={{
-                marginBottom: "16px",
-                padding: "14px 18px",
-                borderRadius: "16px",
+                marginBottom: "12px",
+                padding: "12px 16px",
+                borderRadius: "14px",
                 background: msg.role === "user" ? "#2563eb" : "#1e293b",
                 alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
                 maxWidth: "80%",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                 <strong style={{ color: msg.role === "user" ? "#a5f3fc" : "#fbbf24" }}>
-                  {msg.role === "user" ? "👤 YOU" : "👑 CEO AI"}
+                  {msg.role === "user" ? "👤 YOU" : "👑 CEO"}
                 </strong>
                 <span style={{ fontSize: "10px", color: "#64748b", marginLeft: "12px" }}>
                   {msg.timestamp}
                 </span>
               </div>
-              <p style={{ marginTop: "4px", lineHeight: "1.6", fontSize: "14px", whiteSpace: "pre-wrap" }}>
+              <p style={{ marginTop: "4px", lineHeight: "1.5", fontSize: "14px", whiteSpace: "pre-wrap" }}>
                 {msg.text}
               </p>
-              {msg.action && (
-                <span style={{ fontSize: "11px", color: "#22c55e", marginTop: "8px", display: "block" }}>
-                  ⚡ Action: {msg.action}
-                </span>
-              )}
             </div>
           ))}
           {loading && (
@@ -331,8 +326,8 @@ export default function CEOPage() {
         </div>
 
         {/* Suggestions */}
-        <div style={{ marginBottom: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {suggestions.map((suggestion, index) => (
+        <div style={{ marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {suggestions.slice(0, 4).map((suggestion, index) => (
             <button
               key={index}
               onClick={() => quickAction(suggestion)}
@@ -340,16 +335,13 @@ export default function CEOPage() {
                 background: "#1e293b",
                 border: "1px solid #334155",
                 color: "#94a3b8",
-                padding: "8px 16px",
-                borderRadius: "20px",
-                fontSize: "12px",
+                padding: "6px 14px",
+                borderRadius: "16px",
+                fontSize: "11px",
                 cursor: "pointer",
-                transition: "0.2s",
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "#334155"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "#1e293b"}
             >
-              💡 {suggestion}
+              💡 {suggestion.length > 40 ? suggestion.slice(0, 40) + "..." : suggestion}
             </button>
           ))}
         </div>
@@ -366,15 +358,15 @@ export default function CEOPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type CEO command... (e.g., 'Generate viral video for Supercars')"
+            placeholder="Type CEO command..."
             style={{
               flex: 1,
-              padding: "16px",
-              borderRadius: "14px",
+              padding: "14px",
+              borderRadius: "12px",
               border: "1px solid #334155",
               background: "#0f172a",
               color: "white",
-              fontSize: "15px",
+              fontSize: "14px",
               outline: "none",
             }}
           />
@@ -382,42 +374,39 @@ export default function CEOPage() {
             onClick={sendMessage}
             disabled={loading}
             style={{
-              padding: "16px 28px",
-              borderRadius: "14px",
+              padding: "14px 24px",
+              borderRadius: "12px",
               border: "none",
               background: loading ? "#1e293b" : "linear-gradient(to right, #2563eb, #38bdf8)",
               color: "white",
               fontWeight: "bold",
               cursor: loading ? "not-allowed" : "pointer",
-              fontSize: "15px",
+              fontSize: "14px",
             }}
           >
-            {loading ? "Sending..." : "🚀 Send"}
+            {loading ? "..." : "🚀 Send"}
           </button>
         </div>
 
-        {/* Quick Actions Bar */}
+        {/* Quick Actions */}
         <div
           style={{
             marginTop: "16px",
             display: "flex",
-            gap: "12px",
+            gap: "10px",
             flexWrap: "wrap",
             justifyContent: "center",
           }}
         >
-          <QuickButton onClick={runAutonomousCommand} color="#22c55e">
-            🤖 Run Autonomous Mode
-          </QuickButton>
-          <QuickButton onClick={() => quickAction(`Generate viral video for ${selectedNiche}`)} color="#3b82f6">
-            🎬 Generate Video
-          </QuickButton>
-          <QuickButton onClick={() => quickAction("Analyze channel performance")} color="#f59e0b">
-            📊 Analyze Performance
-          </QuickButton>
-          <QuickButton onClick={() => window.open("/api/youtube/autonomous", "_blank")} color="#06b6d4">
-            📡 API Status
-          </QuickButton>
+          <button onClick={runAutonomousCommand} style={{ background: "#22c55e", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
+            🤖 Auto Mode
+          </button>
+          <button onClick={() => quickAction(`Generate video for ${selectedNiche}`)} style={{ background: "#3b82f6", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
+            🎬 Generate
+          </button>
+          <button onClick={() => quickAction("Analyze channel")} style={{ background: "#f59e0b", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
+            📊 Analyze
+          </button>
         </div>
       </main>
     </div>
@@ -429,36 +418,16 @@ function StatCard({ title, value, color, live }: { title: string; value: string;
     <div
       style={{
         background: "#0f172a",
-        padding: "16px",
-        borderRadius: "16px",
+        padding: "12px",
+        borderRadius: "12px",
         border: "1px solid #1e293b",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-        <p style={{ fontSize: "12px", color: "#64748b" }}>{title}</p>
-        {live && <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 6px #22c55e" }} />}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+        <p style={{ fontSize: "11px", color: "#64748b" }}>{title}</p>
+        {live && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />}
       </div>
-      <p style={{ fontSize: "24px", fontWeight: "bold", color }}>{value}</p>
+      <p style={{ fontSize: "20px", fontWeight: "bold", color }}>{value}</p>
     </div>
-  );
-}
-
-function QuickButton({ children, onClick, color }: { children: React.ReactNode; onClick: () => void; color: string }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: color,
-        border: "none",
-        color: "white",
-        padding: "10px 20px",
-        borderRadius: "10px",
-        fontWeight: "bold",
-        cursor: "pointer",
-        fontSize: "13px",
-      }}
-    >
-      {children}
-    </button>
   );
 }
