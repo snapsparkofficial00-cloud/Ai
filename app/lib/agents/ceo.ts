@@ -1,10 +1,6 @@
-interface CEOCommand {
-  command: string;
-  action: string;
-  params: Record<string, any>;
-}
 
-export async function ceoDecision(context: string): Promise<CEOCommand> {
+
+export async function ceoDecision(context: string): Promise<any> {
   const GROQ_KEY = process.env.GROQ_API_KEY;
   
   const prompt = `
@@ -50,3 +46,9 @@ export async function runCEOStrategy(niche: string): Promise<any> {
     timestamp: new Date().toISOString(),
   };
 }
+
+// For backward compatibility
+export const ceoAgent = {
+  decide: ceoDecision,
+  runStrategy: runCEOStrategy,
+};
