@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { initCREAWAI, quickGenerate, fullGenerate, getTrendingForNiche, analyzeTopic } from "../../../core/creawai/index";
+import { initCREAWAI, quickGenerate, fullGenerate, getTrendingForNiche, analyzeTopic } from "../../../core/creawai";
 
 export const maxDuration = 300;
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
           success: true,
           message: `CREAWAI initialized for niche: ${niche}`,
-          config: engine.getConfig(),
+          config: engine.config,
         });
 
       default:
