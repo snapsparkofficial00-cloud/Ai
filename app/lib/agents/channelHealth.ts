@@ -1,130 +1,62 @@
-import fs from "fs";
-import path from "path";
-
-export interface ChannelHealth {
-  monetized: boolean;
-  subscribers: number;
-  watchHours: number;
-  shortsViews: number;
-
-  copyrightClaims: number;
-  copyrightStrikes: number;
-  communityStrikes: number;
-
-  revenue: number;
-
-  healthScore: number;
-  status: string;
-
-  warnings: string[];
+interface HealthMetrics {
+  score: number;
+  status: "Excellent" | "Good" | "Needs Attention" | "Critical";
+  metrics: {
+    subscriberGrowth: number;
+    viewVelocity: number;
+    engagementRate: number;
+    uploadConsistency: number;
+    ctr: number;
+  };
+  recommendations: string[];
 }
 
-const DATA_PATH = path.join(
-  process.cwd(),
-  "lib",
-  "memory",
-  "channelHealth.json"
-);
-
-export async function getChannelHealth(): Promise<ChannelHealth> {
-  try {
-    const memoryDir = path.dirname(DATA_PATH);
-
-    if (!fs.existsSync(memoryDir)) {
-      fs.mkdirSync(memoryDir, { recursive: true });
-    }
-
-    if (!fs.existsSync(DATA_PATH)) {
-      const defaultData: ChannelHealth = {
-        monetized: false,
-        subscribers: 0,
-        watchHours: 0,
-        shortsViews: 0,
-
-        copyrightClaims: 0,
-        copyrightStrikes: 0,
-        communityStrikes: 0,
-
-        revenue: 0,
-
-        healthScore: 100,
-        status: "Excellent",
-
-        warnings: [],
-      };
-
-      fs.writeFileSync(
-        DATA_PATH,
-        JSON.stringify(defaultData, null, 2)
-      );
-
-      return defaultData;
-    }
-
-    const data: ChannelHealth = JSON.parse(
-      fs.readFileSync(DATA_PATH, "utf8")
-    );
-
-    let score = 100;
-    const warnings: string[] = [];
-
-    score -= (data.copyrightClaims || 0) * 5;
-    score -= (data.copyrightStrikes || 0) * 25;
-    score -= (data.communityStrikes || 0) * 30;
-
-    if (score < 0) score = 0;
-
-    if (data.copyrightClaims > 0) {
-      warnings.push(
-        `${data.copyrightClaims} copyright claim(s) detected`
-      );
-    }
-
-    if (data.copyrightStrikes > 0) {
-      warnings.push(
-        `${data.copyrightStrikes} copyright strike(s) detected`
-      );
-    }
-
-    if (data.communityStrikes > 0) {
-      warnings.push(
-        `${data.communityStrikes} community guideline strike(s) detected`
-      );
-    }
-
-    let status = "Excellent";
-
-    if (score < 90) status = "Good";
-    if (score < 70) status = "Warning";
-    if (score < 50) status = "Critical";
-
-    return {
-      ...data,
-      healthScore: score,
-      status,
-      warnings,
-    };
-  } catch (error) {
-    console.error("CHANNEL HEALTH ERROR:", error);
-
-    return {
-      monetized: false,
-      subscribers: 0,
-      watchHours: 0,
-      shortsViews: 0,
-
-      copyrightClaims: 0,
-      copyrightStrikes: 0,
-      communityStrikes: 0,
-
-      revenue: 0,
-
-      healthScore: 0,
-      status: "Error",
-
-      warnings: ["Failed to load channel health"],
-    };
+export async function getChannelHealth(channelId?: string): Promise<HealthMetrics> {
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  let performanceData: any[] = [];
+  
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/performance?select=*&order=trackedAt.desc&limit=30`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      });
+      performanceData = await res.json();
+    } catch {}
   }
+  
+  let score = 75;
+  let recommendations: string[] = [];
+  
+  if (performanceData.length > 0) {
+    const avgScore = performanceData.reduce((a: any, b: any) => a + (b.score || 0), 0) / performanceData.length;
+    score = Math.min(100, Math.max(0, avgScore));
+    
+    if (score < 50) recommendations.push("Improve video quality and thumbnails");
+    if (score < 70) recommendations.push("Post more consistently");
+    if (score > 80) recommendations.push("Continue current strategy - it's working!");
+  } else {
+    recommendations.push("Upload first video to generate health data");
+    recommendations.push("Set up YouTube OAuth for analytics");
+  }
+  
+  let status: HealthMetrics["status"] = "Good";
+  if (score >= 80) status = "Excellent";
+  else if (score >= 60) status = "Good";
+  else if (score >= 40) status = "Needs Attention";
+  else status = "Critical";
+  
+  return {
+    score,
+    status,
+    metrics: {
+      subscriberGrowth: performanceData.length > 0 ? (performanceData[0]?.views || 0) / 100 : 0,
+      viewVelocity: performanceData.length > 0 ? performanceData.length * 10 : 0,
+      engagementRate: performanceData.length > 0 ? (performanceData[0]?.likes || 0) / (performanceData[0]?.views || 1) * 100 : 0,
+      uploadConsistency: performanceData.length,
+      ctr: performanceData.length > 0 ? (performanceData[0]?.ctr || 12) : 12,
+    },
+    recommendations,
+  };
 }
-
-export const ChannelHealthAgent = getChannelHealth;
