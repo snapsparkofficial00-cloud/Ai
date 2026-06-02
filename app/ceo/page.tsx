@@ -10,6 +10,34 @@ interface Message {
   action?: string;
 }
 
+interface SystemData {
+  stats?: {
+    totalAgents?: number;
+    completedTasks?: number;
+    runningTasks?: number;
+    memoryStored?: number;
+  };
+}
+
+interface HealthData {
+  health?: {
+    metrics?: {
+      subscriberGrowth?: number;
+      viewVelocity?: number;
+    };
+    status?: string;
+    score?: number;
+  };
+  channelHealth?: {
+    metrics?: {
+      subscriberGrowth?: number;
+      viewVelocity?: number;
+    };
+    status?: string;
+    score?: number;
+  };
+}
+
 export default function CEOPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -36,7 +64,6 @@ export default function CEOPage() {
     "Run autonomous mode",
     "Show trending topics",
   ]);
-  const [autoResponder, setAutoResponder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const niches = [
@@ -58,34 +85,29 @@ export default function CEOPage() {
   async function loadCEOStats() {
     try {
       const [systemRes, healthRes] = await Promise.all([
-        fetch("/api/system").catch(() => ({ json: () => ({}) })),
-        fetch("/api/youtube/health").catch(() => ({ json: () => ({}) })),
+        fetch("/api/system"),
+        fetch("/api/youtube/health"),
       ]);
 
-      const systemData = await systemRes.json();
-      const healthData = await healthRes.json();
-
-      // Fix: Check if systemData exists and has stats property
+      const systemData: SystemData = await systemRes.json();
+      const healthData: HealthData = await healthRes.json();
+      
+      // Update stats from system data
       if (systemData && systemData.stats) {
         setCeoStats(prev => ({
           ...prev,
-          activeAgents: systemData.stats.totalAgents || 11,
-          tasksCompleted: systemData.stats.completedTasks || 0,
+          activeAgents: systemData.stats?.totalAgents || 11,
+          tasksCompleted: systemData.stats?.completedTasks || 0,
         }));
       }
       
-      // Fix: Check if healthData exists and has health property
-      if (healthData && healthData.health) {
+      // Update stats from channel health
+      const healthInfo = healthData?.health || healthData?.channelHealth;
+      if (healthInfo && healthInfo.metrics) {
         setCeoStats(prev => ({
           ...prev,
-          youtubeSubs: healthData.health.metrics?.subscriberGrowth || 66,
-          totalViews: healthData.health.metrics?.viewVelocity * 100 || 20091,
-        }));
-      } else if (healthData && healthData.channelHealth) {
-        setCeoStats(prev => ({
-          ...prev,
-          youtubeSubs: healthData.channelHealth.metrics?.subscriberGrowth || 66,
-          totalViews: healthData.channelHealth.metrics?.viewVelocity * 100 || 20091,
+          youtubeSubs: healthInfo.metrics?.subscriberGrowth || 66,
+          totalViews: (healthInfo.metrics?.viewVelocity || 200) * 100,
         }));
       }
     } catch (error) {
@@ -119,7 +141,7 @@ export default function CEOPage() {
 
       const ceoMessage: Message = {
         role: "ceo",
-        text: data.reply || "✅ Command executed successfully. What would you like to do next?",
+        text: data.reply || "✅ Command executed successfully.",
         timestamp: new Date().toLocaleTimeString(),
         action: data.action,
       };
@@ -160,11 +182,10 @@ export default function CEOPage() {
       const data = await res.json();
       
       if (data.success) {
-        addSystemMessage(`✅ Autonomous generation complete: "${data.title || "Video generated"}"`);
-        addSystemMessage(`📊 Confidence: ${data.decision?.confidence || 70}%`);
+        addSystemMessage(`✅ Generated: "${data.title || "Video"}"`);
         setCeoStats(prev => ({ ...prev, videosGenerated: prev.videosGenerated + 1 }));
       } else {
-        addSystemMessage(`⚠️ Generation issue: ${data.error || "Unknown"}`);
+        addSystemMessage(`⚠️ Issue: ${data.error || "Unknown"}`);
       }
     } catch (error) {
       addSystemMessage(`❌ Error: ${String(error)}`);
@@ -190,170 +211,82 @@ export default function CEOPage() {
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "#020617",
-        color: "white",
-        fontFamily: "Inter, Arial, sans-serif",
-      }}
-    >
+    <div style={{ display: "flex", minHeight: "100vh", background: "#020617", color: "white" }}>
       <Sidebar />
+      <main style={{ flex: 1, marginLeft: "260px", padding: "24px", overflow: "hidden" }}>
+        
+        <h1 style={{ fontSize: "40px", fontWeight: "bold", marginBottom: "8px" }}>
+          👑 CEO AI COMMAND CENTER
+        </h1>
+        <p style={{ color: "#94a3b8", marginBottom: "24px" }}>
+          Autonomous AI infrastructure controlling business systems and AI agents.
+        </p>
 
-      <main
-        style={{
-          flex: 1,
-          marginLeft: "260px",
-          padding: "24px",
-          width: "100%",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <div style={{ marginBottom: "24px" }}>
-          <h1
-            style={{
-              fontSize: "clamp(32px, 5vw, 48px)",
-              fontWeight: "bold",
-              background: "linear-gradient(to right, #38bdf8, #818cf8, #f472b6)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              marginBottom: "8px",
-            }}
-          >
-            👑 CEO AI COMMAND CENTER
-          </h1>
-          <p
-            style={{
-              color: "#94a3b8",
-              fontSize: "16px",
-            }}
-          >
-            Autonomous AI infrastructure controlling business systems, automation workflows, analytics and AI agents.
-          </p>
-        </div>
-
-        {/* CEO Stats Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "12px",
-            marginBottom: "24px",
-          }}
-        >
-          <StatCard title="🟢 AI Status" value="ONLINE" color="#22c55e" live />
-          <StatCard title="👑 Active Agent" value="CEO AI" color="#38bdf8" />
-          <StatCard title="🤖 Active Agents" value={ceoStats.activeAgents.toString()} color="#a855f7" />
-          <StatCard title="✅ Tasks" value={ceoStats.tasksCompleted.toLocaleString()} color="#22c55e" />
-          <StatCard title="🎬 Videos" value={ceoStats.videosGenerated.toString()} color="#f59e0b" />
-          <StatCard title="👥 Subs" value={ceoStats.youtubeSubs.toLocaleString()} color="#ef4444" />
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "12px", marginBottom: "24px" }}>
+          <StatCard title="AI Status" value="ONLINE" color="#22c55e" />
+          <StatCard title="Active Agent" value="CEO AI" color="#38bdf8" />
+          <StatCard title="Agents" value={ceoStats.activeAgents.toString()} color="#a855f7" />
+          <StatCard title="Tasks" value={ceoStats.tasksCompleted.toString()} color="#22c55e" />
+          <StatCard title="Videos" value={ceoStats.videosGenerated.toString()} color="#f59e0b" />
+          <StatCard title="Subs" value={ceoStats.youtubeSubs.toLocaleString()} color="#ef4444" />
         </div>
 
         {/* Niche Selector */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ color: "#64748b", fontSize: "14px", display: "block", marginBottom: "8px" }}>
-            🎯 Active Niche
-          </label>
-          <select
-            value={selectedNiche}
-            onChange={(e) => setSelectedNiche(e.target.value)}
-            style={{
-              width: "100%",
-              maxWidth: "300px",
-              padding: "12px 16px",
-              borderRadius: "12px",
-              background: "#0f172a",
-              color: "white",
-              border: "1px solid #334155",
-              fontSize: "14px",
-              cursor: "pointer",
-            }}
-          >
-            {niches.map(niche => (
-              <option key={niche} value={niche}>{niche}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Chat Container */}
-        <div
+        <select
+          value={selectedNiche}
+          onChange={(e) => setSelectedNiche(e.target.value)}
           style={{
+            padding: "12px",
+            borderRadius: "12px",
             background: "#0f172a",
-            borderRadius: "20px",
-            padding: "20px",
-            height: "calc(100vh - 420px)",
-            minHeight: "350px",
-            overflowY: "auto",
+            color: "white",
+            border: "1px solid #334155",
             marginBottom: "20px",
-            border: "1px solid #1e293b",
-            display: "flex",
-            flexDirection: "column",
+            width: "250px",
           }}
         >
+          {niches.map(niche => <option key={niche} value={niche}>{niche}</option>)}
+        </select>
+
+        {/* Chat */}
+        <div style={{
+          background: "#0f172a",
+          borderRadius: "20px",
+          padding: "20px",
+          height: "400px",
+          overflowY: "auto",
+          marginBottom: "20px",
+          border: "1px solid #1e293b",
+        }}>
           {messages.map((msg, index) => (
-            <div
-              key={index}
-              style={{
-                marginBottom: "12px",
-                padding: "12px 16px",
-                borderRadius: "14px",
-                background: msg.role === "user" ? "#2563eb" : "#1e293b",
-                alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                maxWidth: "80%",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                <strong style={{ color: msg.role === "user" ? "#a5f3fc" : "#fbbf24" }}>
-                  {msg.role === "user" ? "👤 YOU" : "👑 CEO"}
-                </strong>
-                <span style={{ fontSize: "10px", color: "#64748b", marginLeft: "12px" }}>
-                  {msg.timestamp}
-                </span>
-              </div>
-              <p style={{ marginTop: "4px", lineHeight: "1.5", fontSize: "14px", whiteSpace: "pre-wrap" }}>
-                {msg.text}
-              </p>
+            <div key={index} style={{
+              marginBottom: "12px",
+              padding: "12px 16px",
+              borderRadius: "14px",
+              background: msg.role === "user" ? "#2563eb" : "#1e293b",
+              textAlign: msg.role === "user" ? "right" : "left",
+            }}>
+              <strong>{msg.role === "user" ? "👤 You" : "👑 CEO"}</strong>
+              <p style={{ marginTop: "6px", fontSize: "14px" }}>{msg.text}</p>
+              <span style={{ fontSize: "10px", color: "#64748b" }}>{msg.timestamp}</span>
             </div>
           ))}
-          {loading && (
-            <div style={{ padding: "12px", color: "#38bdf8", fontStyle: "italic" }}>
-              🤖 CEO AI is thinking...
-            </div>
-          )}
+          {loading && <p style={{ color: "#38bdf8" }}>🤖 Thinking...</p>}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Suggestions */}
-        <div style={{ marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {suggestions.slice(0, 4).map((suggestion, index) => (
-            <button
-              key={index}
-              onClick={() => quickAction(suggestion)}
-              style={{
-                background: "#1e293b",
-                border: "1px solid #334155",
-                color: "#94a3b8",
-                padding: "6px 14px",
-                borderRadius: "16px",
-                fontSize: "11px",
-                cursor: "pointer",
-              }}
-            >
-              💡 {suggestion.length > 40 ? suggestion.slice(0, 40) + "..." : suggestion}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
+          {suggestions.slice(0, 4).map((s, i) => (
+            <button key={i} onClick={() => quickAction(s)} style={{ background: "#1e293b", border: "none", color: "#94a3b8", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", cursor: "pointer" }}>
+              💡 {s.length > 35 ? s.slice(0, 35) + "..." : s}
             </button>
           ))}
         </div>
 
-        {/* Input Area */}
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            width: "100%",
-          }}
-        >
+        {/* Input */}
+        <div style={{ display: "flex", gap: "12px" }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -366,8 +299,6 @@ export default function CEOPage() {
               border: "1px solid #334155",
               background: "#0f172a",
               color: "white",
-              fontSize: "14px",
-              outline: "none",
             }}
           />
           <button
@@ -377,35 +308,23 @@ export default function CEOPage() {
               padding: "14px 24px",
               borderRadius: "12px",
               border: "none",
-              background: loading ? "#1e293b" : "linear-gradient(to right, #2563eb, #38bdf8)",
+              background: loading ? "#1e293b" : "#2563eb",
               color: "white",
               fontWeight: "bold",
               cursor: loading ? "not-allowed" : "pointer",
-              fontSize: "14px",
             }}
           >
-            {loading ? "..." : "🚀 Send"}
+            Send
           </button>
         </div>
 
         {/* Quick Actions */}
-        <div
-          style={{
-            marginTop: "16px",
-            display: "flex",
-            gap: "10px",
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
+        <div style={{ display: "flex", gap: "10px", marginTop: "16px", justifyContent: "center" }}>
           <button onClick={runAutonomousCommand} style={{ background: "#22c55e", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
             🤖 Auto Mode
           </button>
           <button onClick={() => quickAction(`Generate video for ${selectedNiche}`)} style={{ background: "#3b82f6", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
             🎬 Generate
-          </button>
-          <button onClick={() => quickAction("Analyze channel")} style={{ background: "#f59e0b", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
-            📊 Analyze
           </button>
         </div>
       </main>
@@ -413,20 +332,10 @@ export default function CEOPage() {
   );
 }
 
-function StatCard({ title, value, color, live }: { title: string; value: string; color: string; live?: boolean }) {
+function StatCard({ title, value, color }: { title: string; value: string; color: string }) {
   return (
-    <div
-      style={{
-        background: "#0f172a",
-        padding: "12px",
-        borderRadius: "12px",
-        border: "1px solid #1e293b",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-        <p style={{ fontSize: "11px", color: "#64748b" }}>{title}</p>
-        {live && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />}
-      </div>
+    <div style={{ background: "#0f172a", padding: "12px", borderRadius: "12px", border: "1px solid #1e293b" }}>
+      <p style={{ fontSize: "11px", color: "#64748b" }}>{title}</p>
       <p style={{ fontSize: "20px", fontWeight: "bold", color }}>{value}</p>
     </div>
   );
