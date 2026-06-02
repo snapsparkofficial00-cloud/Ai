@@ -59,10 +59,22 @@ export default function Dashboard() {
       setWorkflow(workflowData);
       setLogs(logsData);
       
-      if (healthData.health) setChannelHealth(healthData.health);
-      if (trendsData.trends) setTrends(trendsData.trends.slice(0, 5));
+      // Fix: Check the actual response structure
+      if (healthData && healthData.health) {
+        setChannelHealth(healthData.health);
+      } else if (healthData && healthData.success) {
+        setChannelHealth(healthData.health);
+      } else if (healthData && healthData.channelHealth) {
+        setChannelHealth(healthData.channelHealth);
+      }
       
-      // Update stats
+      if (trendsData && trendsData.trends) {
+        setTrends(trendsData.trends.slice(0, 5));
+      } else if (trendsData && trendsData.success && trendsData.trends) {
+        setTrends(trendsData.trends.slice(0, 5));
+      }
+      
+      // Update stats from system data
       if (systemData?.stats) {
         setStats(prev => ({
           ...prev,
@@ -73,11 +85,13 @@ export default function Dashboard() {
         }));
       }
       
-      if (healthData.health) {
+      // Update stats from channel health
+      const healthInfo = channelHealth || healthData?.health || healthData?.channelHealth;
+      if (healthInfo) {
         setStats(prev => ({
           ...prev,
-          youtubeSubs: healthData.health.metrics?.subscriberGrowth || 66,
-          totalViews: healthData.health.metrics?.viewVelocity * 100 || 20091,
+          youtubeSubs: healthInfo.metrics?.subscriberGrowth || healthInfo.subscribers || 66,
+          totalViews: healthInfo.metrics?.viewVelocity * 100 || healthInfo.views || 20091,
         }));
       }
     } catch (error) {
@@ -135,16 +149,16 @@ export default function Dashboard() {
           });
           const data = await res.json();
           if (data.success) {
-            addTerminal(`✅ Generated: ${data.title}`);
+            addTerminal(`✅ Generated: ${data.title || "New video"}`);
             setStats(prev => ({ ...prev, videosGenerated: prev.videosGenerated + 1 }));
           } else {
-            addTerminal(`⚠️ Generation issue: ${data.error}`);
+            addTerminal(`⚠️ Generation issue: ${data.error || "Unknown"}`);
           }
         } catch (error) {
           addTerminal(`❌ Auto-generation error: ${String(error)}`);
         }
         await loadData();
-      }, 30 * 60 * 1000); // Every 30 minutes
+      }, 30 * 60 * 1000);
       
       setAutoInterval(interval);
     } else {
@@ -165,11 +179,11 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        addTerminal(`✅ Quick generate complete: "${data.title}"`);
+        addTerminal(`✅ Quick generate complete: "${data.title || "Video generated"}"`);
         addTerminal(`📊 Confidence: ${data.decision?.confidence || 70}%`);
         setStats(prev => ({ ...prev, videosGenerated: prev.videosGenerated + 1 }));
       } else {
-        addTerminal(`❌ Generation failed: ${data.error}`);
+        addTerminal(`❌ Generation failed: ${data.error || "Unknown error"}`);
       }
       await loadData();
     } catch (error) {
@@ -402,20 +416,26 @@ export default function Dashboard() {
           border: "1px solid #1e293b"
         }}>
           <h2 style={{ fontSize: "20px", marginBottom: "16px", color: "#f59e0b" }}>🔥 VIRAL TRENDS</h2>
-          {trends.map((trend, index) => (
-            <div key={index} style={{
-              background: "#020617",
-              padding: "12px",
-              borderRadius: "8px",
-              marginBottom: "8px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <span>📈 {trend.keyword || trend}</span>
-              <span style={{ color: "#22c55e", fontSize: "12px" }}>Score: {trend.viralScore || Math.floor(Math.random() * 50) + 50}</span>
+          {trends.length === 0 ? (
+            <div style={{ background: "#020617", padding: "16px", borderRadius: "12px", color: "#64748b" }}>
+              Loading trends...
             </div>
-          ))}
+          ) : (
+            trends.map((trend, index) => (
+              <div key={index} style={{
+                background: "#020617",
+                padding: "12px",
+                borderRadius: "8px",
+                marginBottom: "8px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}>
+                <span>📈 {trend.keyword || trend}</span>
+                <span style={{ color: "#22c55e", fontSize: "12px" }}>Score: {trend.viralScore || Math.floor(Math.random() * 50) + 50}</span>
+              </div>
+            ))
+          )}
           
           {channelHealth && (
             <div style={{ marginTop: "20px" }}>
@@ -423,7 +443,9 @@ export default function Dashboard() {
               <div style={{ background: "#020617", padding: "16px", borderRadius: "12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                   <span>Status:</span>
-                  <span style={{ color: channelHealth.status === "Excellent" ? "#22c55e" : "#f59e0b" }}>{channelHealth.status || "Good"}</span>
+                  <span style={{ color: channelHealth.status === "Excellent" ? "#22c55e" : channelHealth.status === "Good" ? "#38bdf8" : "#f59e0b" }}>
+                    {channelHealth.status || "Good"}
+                  </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Score:</span>
@@ -452,7 +474,11 @@ export default function Dashboard() {
             overflowX: "auto",
             color: "#94a3b8"
           }}>
-            {JSON.stringify({ system: system?.stats, workflows: workflow?.tasks?.length, logs: logs?.logs?.length }, null, 2)}
+            {JSON.stringify({ 
+              system: system?.stats || system, 
+              workflows: workflow?.tasks?.length || 0, 
+              logs: logs?.logs?.length || 0 
+            }, null, 2)}
           </pre>
         </div>
       </div>
