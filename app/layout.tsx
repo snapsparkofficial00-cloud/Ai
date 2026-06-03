@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import "./globals.css";
 import Sidebar from "./components/Sidebar";
 
 export default function RootLayout({
@@ -13,7 +12,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <body style={{ margin: 0, padding: 0, background: "#020617", color: "white", fontFamily: "Arial, sans-serif" }}>
         <Sidebar onToggle={setSidebarOpen} />
         <div style={{
           marginLeft: sidebarOpen ? "280px" : "0px",
