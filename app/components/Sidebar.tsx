@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default function Sidebar() {
+export default function Sidebar({ onToggle }: { onToggle?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (onToggle) {
+      onToggle(open);
+    }
+  }, [open, onToggle]);
 
   return (
     <>
       {/* MOBILE MENU BUTTON */}
-
       <button
         onClick={() => setOpen(!open)}
         style={{
@@ -30,7 +35,6 @@ export default function Sidebar() {
       </button>
 
       {/* OVERLAY */}
-
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -44,14 +48,11 @@ export default function Sidebar() {
       )}
 
       {/* SIDEBAR */}
-
       <aside
         style={{
           width: "280px",
           maxWidth: "85vw",
-          transform: open
-            ? "translateX(0)"
-            : "translateX(-100%)",
+          transform: open ? "translateX(0)" : "translateX(-100%)",
           transition: "0.3s ease",
           zIndex: 999,
           background: "#0f172a",
@@ -62,54 +63,26 @@ export default function Sidebar() {
           padding: "30px 20px",
           borderRight: "1px solid #1e293b",
           overflowY: "auto",
-          boxShadow: open
-            ? "0 0 30px rgba(0,0,0,0.5)"
-            : "none",
+          boxShadow: open ? "0 0 30px rgba(0,0,0,0.5)" : "none",
         }}
       >
         {/* LOGO */}
-
-        <div
-          style={{
-            marginBottom: "40px",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "34px",
-              color: "#38bdf8",
-              margin: 0,
-            }}
-          >
-            🚀 AI OS
-          </h1>
-
-          <p
-            style={{
-              color: "#94a3b8",
-              marginTop: "10px",
-            }}
-          >
-            Autonomous AI Infrastructure
-          </p>
+        <div style={{ marginBottom: "40px" }}>
+          <h1 style={{ fontSize: "34px", color: "#38bdf8", margin: 0 }}>🚀 AI OS</h1>
+          <p style={{ color: "#94a3b8", marginTop: "10px" }}>Autonomous AI Infrastructure</p>
         </div>
 
         {/* MENU */}
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <MenuItem href="/" label="🏠 Dashboard" />
+          <MenuItem href="/youtube" label="📺 YouTube AI" />
+          <MenuItem href="/ceo" label="👑 CEO AI" />
+          <MenuItem href="/autopilot" label="🤖 Auto Pilot" />
           <MenuItem href="/assistant" label="🤖 AI Assistant" />
           <MenuItem href="/agents" label="🧠 AI Agents" />
           <MenuItem href="/automation" label="⚡ Automation" />
           <MenuItem href="/analytics" label="📊 Analytics" />
           <MenuItem href="/telegram" label="📡 Telegram" />
-         <MenuItem href="/youtube" label="🚀 YouTube OS" />
           <MenuItem href="/memory" label="🧠 Memory" />
           <MenuItem href="/revenue" label="💰 Revenue" />
           <MenuItem href="/settings" label="⚙️ Settings" />
@@ -119,15 +92,7 @@ export default function Sidebar() {
   );
 }
 
-/* MENU ITEM */
-
-function MenuItem({
-  href,
-  label,
-}: {
-  href: string;
-  label: string;
-}) {
+function MenuItem({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
