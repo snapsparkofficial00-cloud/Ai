@@ -4,6 +4,36 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Sidebar from "./components/Sidebar";
 
+// Add type definitions
+interface SystemStats {
+  stats?: {
+    totalAgents?: number;
+    completedTasks?: number;
+    runningTasks?: number;
+    memoryStored?: number;
+    logs?: number;
+  };
+}
+
+interface YouTubeStats {
+  subscribers?: number;
+  views?: number;
+  videos?: number;
+}
+
+interface LogEntry {
+  type: string;
+  agent: string;
+  message: string;
+  created_at: string;
+}
+
+interface Task {
+  agent: string;
+  input: string;
+  status: string;
+}
+
 export default function Home() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([
@@ -16,8 +46,8 @@ export default function Home() {
   const [ytSubs, setYtSubs] = useState("0");
   const [ytViews, setYtViews] = useState("0");
   const [ytVideos, setYtVideos] = useState("0");
-  const [logs, setLogs] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     loadAll();
@@ -34,19 +64,26 @@ export default function Home() {
         fetch("/api/workflow").catch(() => ({ json: () => ({}) })),
       ]);
 
-      const sys = await sysRes.json();
-      const yt = await ytRes.json();
+      const sys: SystemStats = await sysRes.json();
+      const yt: YouTubeStats = await ytRes.json();
       const logsData = await logsRes.json();
       const workflow = await workflowRes.json();
 
-      if (sys?.stats) setSystemStats(sys.stats);
-      if (yt?.subscribers) {
+      // Safe checks with type guards
+      if (sys && typeof sys === 'object' && 'stats' in sys && sys.stats) {
+        setSystemStats(sys.stats);
+      }
+      if (yt && typeof yt === 'object' && 'subscribers' in yt && yt.subscribers) {
         setYtSubs(Number(yt.subscribers).toLocaleString());
         setYtViews(Number(yt.views).toLocaleString());
-        setYtVideos(yt.videos);
+        setYtVideos(String(yt.videos || 0));
       }
-      if (logsData?.logs) setLogs(logsData.logs.slice(0, 6));
-      if (workflow?.tasks) setTasks(workflow.tasks.slice(0, 5));
+      if (logsData && 'logs' in logsData && Array.isArray(logsData.logs)) {
+        setLogs(logsData.logs.slice(0, 6));
+      }
+      if (workflow && 'tasks' in workflow && Array.isArray(workflow.tasks)) {
+        setTasks(workflow.tasks.slice(0, 5));
+      }
     } catch (e) {
       console.log(e);
     }
@@ -121,14 +158,14 @@ export default function Home() {
             gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
             gap: "20px",
           }}>
-            <StatCard title="🤖 Active Agents" value={systemStats ? String(systemStats.totalAgents) : "11"} color="#38bdf8" live />
-            <StatCard title="✅ Tasks Completed" value={systemStats ? String(systemStats.completedTasks) : "0"} color="#22c55e" live />
-            <StatCard title="⚡ Running Now" value={systemStats ? String(systemStats.runningTasks) : "0"} color="#f59e0b" live />
-            <StatCard title="🧠 Memories Stored" value={systemStats ? String(systemStats.memoryStored) : "0"} color="#a855f7" live />
+            <StatCard title="🤖 Active Agents" value={systemStats?.totalAgents?.toString() || "11"} color="#38bdf8" live />
+            <StatCard title="✅ Tasks Completed" value={systemStats?.completedTasks?.toString() || "0"} color="#22c55e" live />
+            <StatCard title="⚡ Running Now" value={systemStats?.runningTasks?.toString() || "0"} color="#f59e0b" live />
+            <StatCard title="🧠 Memories Stored" value={systemStats?.memoryStored?.toString() || "0"} color="#a855f7" live />
             <StatCard title="👥 YouTube Subs" value={ytSubs} color="#ef4444" live />
             <StatCard title="📺 Total Views" value={ytViews} color="#38bdf8" live />
             <StatCard title="🎬 Videos" value={ytVideos} color="#f59e0b" live />
-            <StatCard title="📊 System Logs" value={systemStats ? String(systemStats.logs) : "0"} color="#ec4899" live />
+            <StatCard title="📊 System Logs" value={systemStats?.logs?.toString() || "0"} color="#ec4899" live />
           </div>
         </section>
 
@@ -213,7 +250,6 @@ export default function Home() {
             gridTemplateColumns: "repeat(auto-fit,minmax(380px,1fr))",
             gap: "24px",
           }}>
-            {/* LIVE TASKS */}
             <div style={{ background: "#0f172a", padding: "28px", borderRadius: "24px", border: "1px solid #1e293b" }}>
               <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>⚡ Live Tasks</h2>
               {tasks.length === 0 ? (
@@ -249,7 +285,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* LIVE LOGS */}
             <div style={{ background: "#0f172a", padding: "28px", borderRadius: "24px", border: "1px solid #1e293b" }}>
               <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>📡 Live Logs</h2>
               {logs.length === 0 ? (
