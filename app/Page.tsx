@@ -10,6 +10,7 @@ export default function Home() {
     { role: "ai", text: "👑 AI CEO ONLINE — How can I help you build your empire today?" },
   ]);
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Real stats
   const [systemStats, setSystemStats] = useState<any>(null);
@@ -78,13 +79,15 @@ export default function Home() {
 
   return (
     <>
-      <Sidebar />
+      <Sidebar onToggle={setSidebarOpen} />
       <main style={{
         background: "#020617",
         minHeight: "100vh",
         color: "white",
         fontFamily: "Arial",
         padding: "24px",
+        marginLeft: sidebarOpen ? "280px" : "0px",
+        transition: "margin-left 0.3s ease",
         overflowX: "hidden",
       }}>
 
