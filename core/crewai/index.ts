@@ -1,31 +1,30 @@
+// core/crewai/index.ts
 
-
-export async function runCEOStrategy(niche: string) {
-  return {
-    success: true,
-    decision: {
-      command: "generate_script",
-      action: "Create viral content",
-      params: { niche, type: "short" }
-    },
-    reasoning: `Strategy created for ${niche}`,
-    timestamp: new Date().toISOString(),
-    nextSteps: ["Generate script", "Create thumbnail", "Add voiceover"]
-  };
+export interface CrewAIConfig {
+  agents: string[];
+  tasks: string[];
+  verbose?: boolean;
 }
 
-export async function ceoDecision(context: string) {
-  return {
-    command: "generate_script",
-    action: "Create viral content",
-    params: { niche: "general", type: "short" }
-  };
+export class CrewAI {
+  private config: CrewAIConfig;
+
+  constructor(config: CrewAIConfig) {
+    this.config = config;
+  }
+
+  async kickoff() {
+    console.log("CrewAI is running with config:", this.config);
+    return {
+      success: true,
+      message: "CrewAI workflow completed",
+      results: this.config.tasks.map(task => ({ task, status: "completed" }))
+    };
+  }
+
+  async runTask(task: string) {
+    return { success: true, task, result: `Task ${task} completed` };
+  }
 }
 
-export async function getCEORecommendations(performanceData: any[]) {
-  return [
-    "Post at least 3 shorts per week",
-    "Focus on one niche for 30 days",
-    "Improve thumbnails with bright colors"
-  ];
-}
+export default { CrewAI };
