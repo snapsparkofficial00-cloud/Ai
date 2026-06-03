@@ -80,6 +80,7 @@ export default function Sidebar({ onToggle }: { onToggle?: (open: boolean) => vo
           <MenuItem href="/autopilot" label="🤖 Auto Pilot" />
           <MenuItem href="/assistant" label="🤖 AI Assistant" />
           <MenuItem href="/agents" label="🧠 AI Agents" />
+          <MenuItem href="/storage" label="🗄️ Storage" />
           <MenuItem href="/automation" label="⚡ Automation" />
           <MenuItem href="/analytics" label="📊 Analytics" />
           <MenuItem href="/telegram" label="📡 Telegram" />
