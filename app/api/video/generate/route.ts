@@ -1,102 +1,82 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import jwt from 'jsonwebtoken';
 
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-const STORAGE_DIR = path.join(process.cwd(), "public", "videos");
-const STORAGE_FILE = path.join(process.cwd(), "storage", "videos.json");
-
-// Ensure storage directory exists
-async function ensureStorage() {
-  try {
-    await fs.mkdir(STORAGE_DIR, { recursive: true });
-    await fs.mkdir(path.join(process.cwd(), "storage"), { recursive: true });
-  } catch (e) {}
-}
-
-// Save video info to storage
-async function saveVideoToStorage(videoData: any) {
-  await ensureStorage();
-  
-  let videos = [];
-  try {
-    const data = await fs.readFile(STORAGE_FILE, "utf-8");
-    videos = JSON.parse(data);
-  } catch (e) {}
-  
-  const newVideo = {
-    id: Date.now().toString(),
-    ...videoData,
-    createdAt: new Date().toISOString(),
+// Generate JWT token for Kling API
+function generateKlingToken(accessKey: string, secretKey: string): string {
+  const payload = {
+    iss: accessKey,
+    exp: Math.floor(Date.now() / 1000) + 1800,
+    nbf: Math.floor(Date.now() / 1000) - 5
   };
-  
-  videos.unshift(newVideo);
-  await fs.writeFile(STORAGE_FILE, JSON.stringify(videos, null, 2));
-  return newVideo;
+  return jwt.sign(payload, secretKey, { algorithm: 'HS256' });
 }
 
 export async function POST(req: Request) {
   try {
-    const { prompt, mode, imageUrl } = await req.json();
+    const { prompt } = await req.json();
     
-    if (!prompt) {
-      return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
+    const accessKey = process.env.KLING_ACCESS_KEY;
+    const secretKey = process.env.KLING_SECRET_KEY;
+    
+    if (!accessKey || !secretKey) {
+      return NextResponse.json({ 
+        error: "Missing Kling keys. Add KLING_ACCESS_KEY and KLING_SECRET_KEY to Vercel."
+      }, { status: 400 });
     }
-
-    // Try multiple sources
-    let videoUrl = null;
-    let source = null;
-
-    // Try Kaggle first
-    const KAGGLE_URL = process.env.KAGGLE_GRADIO_URL;
-    if (KAGGLE_URL) {
-      try {
-        const response = await fetch(`${KAGGLE_URL}/api/predict`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: [prompt, 49, 7.5, 30] }),
-          signal: AbortSignal.timeout(300000)
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          videoUrl = result.data?.[0];
-          source = "kaggle";
-        }
-      } catch (e) {}
+    
+    const token = generateKlingToken(accessKey, secretKey);
+    
+    // Submit to Kling AI
+    const response = await fetch('https://api-singapore.klingai.com/v1/videos/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'kling-v1-6',
+        prompt: prompt,
+        duration: 8,
+        mode: 'pro',
+        aspect_ratio: '9:16',
+        negative_prompt: 'low quality, blurry, distorted'
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.code !== 0) {
+      return NextResponse.json({ error: data.message }, { status: 500 });
     }
-
-    // If no video, return demo with note
-    if (!videoUrl) {
-      return NextResponse.json({
-        success: false,
-        error: "No video source available. Please ensure Kaggle notebook is running.",
-        demoMode: true
+    
+    const taskId = data.data.task_id;
+    
+    // Poll for result
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      
+      const pollToken = generateKlingToken(accessKey, secretKey);
+      const pollRes = await fetch(`https://api-singapore.klingai.com/v1/videos/generations/${taskId}`, {
+        headers: { 'Authorization': `Bearer ${pollToken}` }
       });
+      const pollData = await pollRes.json();
+      
+      if (pollData.data?.status === 'succeeded') {
+        return NextResponse.json({ 
+          success: true, 
+          videoUrl: pollData.data.videos[0].url,
+          source: 'Kling AI 1.6',
+          quality: '1080p'
+        });
+      }
     }
-
-    // Save video info to storage
-    const savedVideo = await saveVideoToStorage({
-      title: prompt.slice(0, 50),
-      prompt: prompt,
-      videoUrl: videoUrl,
-      source: source,
-      hasVoiceover: false,
-      hasMusic: true
-    });
-
-    return NextResponse.json({
-      success: true,
-      videoUrl: videoUrl,
-      videoId: savedVideo.id,
-      source: source,
-      message: "Video generated and saved to storage"
-    });
-
+    
+    return NextResponse.json({ error: 'Timeout' }, { status: 500 });
+    
   } catch (error) {
-    console.error("Video generation error:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
