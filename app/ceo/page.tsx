@@ -8,6 +8,7 @@ interface Message {
   text: string;
   timestamp: string;
   action?: string;
+  isTyping?: boolean;
 }
 
 interface SystemData {
@@ -38,6 +39,122 @@ interface HealthData {
   };
 }
 
+// Typing Effect Component
+function TypingEffect({ text, onComplete }: { text: string; onComplete?: () => void }) {
+  const [displayedText, setDisplayedText] = useState("");
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (index < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(prev => prev + text[index]);
+        setIndex(prev => prev + 1);
+      }, 20 + Math.random() * 30);
+      return () => clearTimeout(timeout);
+    } else if (onComplete) {
+      onComplete();
+    }
+  }, [index, text, onComplete]);
+
+  return (
+    <span>
+      {displayedText}
+      {index < text.length && (
+        <span style={{
+          display: "inline-block",
+          width: "8px",
+          height: "16px",
+          background: "#38bdf8",
+          marginLeft: "2px",
+          animation: "blink 1s infinite",
+        }} />
+      )}
+      <style>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
+    </span>
+  );
+}
+
+// Live AI Thoughts Component
+function LiveAIThoughts() {
+  const [thought, setThought] = useState("💭 I'm here to help you build your empire");
+  const [activity, setActivity] = useState("Monitoring systems");
+
+  useEffect(() => {
+    const thoughts = [
+      "💭 Analyzing market trends...",
+      "💭 Learning from past interactions...",
+      "💭 Optimizing strategies for you...",
+      "💭 Checking channel health...",
+      "💭 Finding viral opportunities...",
+      "💭 Calculating revenue potential...",
+      "💭 Improving response quality...",
+    ];
+    
+    const activities = [
+      "📡 Active",
+      "🧠 Learning",
+      "🎯 Focused",
+      "⚡ Processing",
+      "🔍 Analyzing",
+      "📊 Computing",
+    ];
+
+    let thoughtIndex = 0;
+    let activityIndex = 0;
+
+    const thoughtInterval = setInterval(() => {
+      setThought(thoughts[thoughtIndex % thoughts.length]);
+      thoughtIndex++;
+    }, 8000);
+
+    const activityInterval = setInterval(() => {
+      setActivity(activities[activityIndex % activities.length]);
+      activityIndex++;
+    }, 5000);
+
+    return () => {
+      clearInterval(thoughtInterval);
+      clearInterval(activityInterval);
+    };
+  }, []);
+
+  return (
+    <div style={{
+      background: "#1e293b",
+      borderRadius: "16px",
+      padding: "12px 16px",
+      marginBottom: "20px",
+      border: "1px solid #334155",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{
+          width: "10px",
+          height: "10px",
+          borderRadius: "50%",
+          background: "#22c55e",
+          animation: "pulse 1.5s infinite",
+        }} />
+        <span style={{ fontWeight: "bold", fontSize: "14px" }}>🧠 CEO AI</span>
+        <span style={{ color: "#22c55e", fontSize: "12px" }}>● {activity}</span>
+      </div>
+      <p style={{ color: "#94a3b8", fontSize: "13px", marginTop: "8px", fontStyle: "italic" }}>
+        {thought}
+      </p>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.2); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function CEOPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -48,7 +165,9 @@ export default function CEOPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [typingMessage, setTypingMessage] = useState<string | null>(null);
   const [selectedNiche, setSelectedNiche] = useState("Supercars");
+  const [isListening, setIsListening] = useState(false);
   const [ceoStats, setCeoStats] = useState({
     activeAgents: 11,
     tasksCompleted: 0,
@@ -65,12 +184,38 @@ export default function CEOPage() {
     "Show trending topics",
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const niches = [
     "Supercars", "Finance", "AI Tech", "Gaming",
     "Space", "Motivation", "Movie Edits", "Viral Facts",
     "Tech Reviews", "Business", "Sci-Fi", "Music"
   ];
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = "en-US";
+
+        recognitionRef.current.onresult = (event: any) => {
+          const command = event.results[0][0].transcript;
+          setInput(command);
+          setIsListening(false);
+          setTimeout(() => sendMessage(), 100);
+        };
+
+        recognitionRef.current.onerror = () => {
+          setIsListening(false);
+          addSystemMessage("🎤 Sorry, I didn't catch that. Please type your command.");
+        };
+      }
+    }
+  }, []);
 
   useEffect(() => {
     loadCEOStats();
@@ -80,7 +225,7 @@ export default function CEOPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, typingMessage]);
 
   async function loadCEOStats() {
     try {
@@ -92,7 +237,6 @@ export default function CEOPage() {
       const systemData: SystemData = await systemRes.json();
       const healthData: HealthData = await healthRes.json();
       
-      // Update stats from system data
       if (systemData && systemData.stats) {
         setCeoStats(prev => ({
           ...prev,
@@ -101,7 +245,6 @@ export default function CEOPage() {
         }));
       }
       
-      // Update stats from channel health
       const healthInfo = healthData?.health || healthData?.channelHealth;
       if (healthInfo && healthInfo.metrics) {
         setCeoStats(prev => ({
@@ -115,6 +258,15 @@ export default function CEOPage() {
     }
   }
 
+  function startVoiceListening() {
+    if (recognitionRef.current) {
+      setIsListening(true);
+      recognitionRef.current.start();
+    } else {
+      addSystemMessage("🎤 Voice recognition not supported in this browser. Please type your command.");
+    }
+  }
+
   async function sendMessage() {
     if (!input.trim() || loading) return;
 
@@ -125,6 +277,16 @@ export default function CEOPage() {
     };
     setMessages(prev => [...prev, userMessage]);
     setLoading(true);
+    setTypingMessage(null);
+
+    // Speak back that we're processing
+    if ("speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance("Processing your request...");
+      utterance.lang = "en-US";
+      utterance.rate = 0.9;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
 
     try {
       const response = await fetch("/api/ceo", {
@@ -138,30 +300,38 @@ export default function CEOPage() {
       });
 
       const data = await response.json();
-
-      const ceoMessage: Message = {
-        role: "ceo",
-        text: data.reply || "✅ Command executed successfully.",
-        timestamp: new Date().toLocaleTimeString(),
-        action: data.action,
-      };
-      setMessages(prev => [...prev, ceoMessage]);
+      const replyText = data.reply || "✅ Command executed successfully.";
+      
+      setTypingMessage(replyText);
 
       if (data.suggestions) {
         setSuggestions(data.suggestions);
       }
 
+      // Speak the response
+      if ("speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(replyText.slice(0, 100));
+        utterance.lang = "en-US";
+        utterance.rate = 0.9;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+
     } catch (error) {
-      const errorMessage: Message = {
-        role: "ceo",
-        text: "❌ Error processing command. Please try again.",
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      setTypingMessage("❌ Error processing command. Please try again.");
     }
 
     setLoading(false);
     setInput("");
+  }
+
+  function addSystemMessage(text: string) {
+    const systemMessage: Message = {
+      role: "ceo",
+      text,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+    setMessages(prev => [...prev, systemMessage]);
   }
 
   async function quickAction(action: string) {
@@ -170,7 +340,6 @@ export default function CEOPage() {
   }
 
   async function runAutonomousCommand() {
-    setLoading(true);
     addSystemMessage("🤖 CEO AI activating autonomous mode...");
     
     try {
@@ -190,17 +359,6 @@ export default function CEOPage() {
     } catch (error) {
       addSystemMessage(`❌ Error: ${String(error)}`);
     }
-    
-    setLoading(false);
-  }
-
-  function addSystemMessage(text: string) {
-    const systemMessage: Message = {
-      role: "ceo",
-      text,
-      timestamp: new Date().toLocaleTimeString(),
-    };
-    setMessages(prev => [...prev, systemMessage]);
   }
 
   async function handleKeyPress(e: React.KeyboardEvent) {
@@ -221,6 +379,9 @@ export default function CEOPage() {
         <p style={{ color: "#94a3b8", marginBottom: "24px" }}>
           Autonomous AI infrastructure controlling business systems and AI agents.
         </p>
+
+        {/* Live AI Thoughts */}
+        <LiveAIThoughts />
 
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "12px", marginBottom: "24px" }}>
@@ -272,7 +433,29 @@ export default function CEOPage() {
               <span style={{ fontSize: "10px", color: "#64748b" }}>{msg.timestamp}</span>
             </div>
           ))}
-          {loading && <p style={{ color: "#38bdf8" }}>🤖 Thinking...</p>}
+          {typingMessage && (
+            <div style={{
+              marginBottom: "12px",
+              padding: "12px 16px",
+              borderRadius: "14px",
+              background: "#1e293b",
+              textAlign: "left",
+            }}>
+              <strong>👑 CEO</strong>
+              <p style={{ marginTop: "6px", fontSize: "14px" }}>
+                <TypingEffect text={typingMessage} onComplete={() => {
+                  const finalMessage: Message = {
+                    role: "ceo",
+                    text: typingMessage,
+                    timestamp: new Date().toLocaleTimeString(),
+                  };
+                  setMessages(prev => [...prev, finalMessage]);
+                  setTypingMessage(null);
+                }} />
+              </p>
+            </div>
+          )}
+          {loading && !typingMessage && <p style={{ color: "#38bdf8" }}>🤖 CEO AI is thinking...</p>}
           <div ref={messagesEndRef} />
         </div>
 
@@ -285,13 +468,13 @@ export default function CEOPage() {
           ))}
         </div>
 
-        {/* Input */}
+        {/* Input with Voice Button */}
         <div style={{ display: "flex", gap: "12px" }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type CEO command..."
+            placeholder={isListening ? "🎤 Listening..." : "Type CEO command or click microphone..."}
             style={{
               flex: 1,
               padding: "14px",
@@ -301,6 +484,20 @@ export default function CEOPage() {
               color: "white",
             }}
           />
+          <button
+            onClick={startVoiceListening}
+            style={{
+              padding: "14px",
+              borderRadius: "12px",
+              border: "none",
+              background: isListening ? "#ef4444" : "#3b82f6",
+              color: "white",
+              cursor: "pointer",
+              animation: isListening ? "pulse 1s infinite" : "none",
+            }}
+          >
+            🎤
+          </button>
           <button
             onClick={sendMessage}
             disabled={loading}
@@ -326,7 +523,17 @@ export default function CEOPage() {
           <button onClick={() => quickAction(`Generate video for ${selectedNiche}`)} style={{ background: "#3b82f6", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
             🎬 Generate
           </button>
+          <button onClick={() => quickAction("Analyze channel performance")} style={{ background: "#f59e0b", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>
+            📊 Analyze
+          </button>
         </div>
+
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+          }
+        `}</style>
       </main>
     </div>
   );
