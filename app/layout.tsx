@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
-import LiveAIPresence from "./components/LiveAIPresence";
-import VoiceAssistant from "./components/VoiceAssistant";
-import { useRouter } from "next/navigation";
+import AlwaysActiveMonitor from "./components/AlwaysActiveMonitor";
 
 export default function RootLayout({
   children,
@@ -12,21 +10,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const router = useRouter();
+  const [systemActive, setSystemActive] = useState(true);
 
-  function handleVoiceCommand(command: string) {
-    const lower = command.toLowerCase();
-    
-    if (lower.includes("youtube") || lower.includes("video")) {
-      router.push("/youtube");
-    } else if (lower.includes("ceo") || lower.includes("dashboard")) {
-      router.push("/ceo");
-    } else if (lower.includes("autopilot") || lower.includes("auto")) {
-      router.push("/autopilot");
-    } else if (lower.includes("generate") || lower.includes("create")) {
-      router.push("/youtube");
+  useEffect(() => {
+    // Start the always-active system
+    async function initializeActiveSystem() {
+      console.log("🚀 AI OS - ALWAYS ACTIVE MODE INITIALIZED");
+      
+      // Start background processor
+      await fetch("/api/tasks/active").catch(() => {});
+      
+      // Start auto scheduler
+      await fetch("/api/cron/ai-brain").catch(() => {});
     }
-  }
+    
+    initializeActiveSystem();
+    
+    // Keep system alive with heartbeat
+    const heartbeat = setInterval(async () => {
+      await fetch("/api/cron/ai-brain").catch(() => {});
+    }, 60000); // Every minute
+    
+    return () => clearInterval(heartbeat);
+  }, []);
 
   return (
     <html lang="en">
@@ -39,8 +45,7 @@ export default function RootLayout({
         }}>
           {children}
         </div>
-        <LiveAIPresence />
-        <VoiceAssistant onCommand={handleVoiceCommand} />
+        {systemActive && <AlwaysActiveMonitor />}
       </body>
     </html>
   );
