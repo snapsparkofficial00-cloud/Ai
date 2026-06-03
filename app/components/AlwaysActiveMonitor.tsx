@@ -11,7 +11,7 @@ export default function AlwaysActiveMonitor() {
     // Start continuous monitoring
     const interval = setInterval(() => {
       checkAndExecute();
-    }, 30000); // Check every 30 seconds
+    }, 60000); // Check every 60 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -23,11 +23,12 @@ export default function AlwaysActiveMonitor() {
     
     try {
       const res = await fetch("/api/cron/ai-brain");
-      const data = await res.json();
-      
-      if (data.tasksCompleted > 0) {
-        setLastActivity(`Completed ${data.tasksCompleted} tasks at ${new Date().toLocaleTimeString()}`);
-        setActiveTasks(prev => [`✅ ${data.tasksCompleted} tasks completed`, ...prev].slice(0, 10));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tasksCompleted > 0) {
+          setLastActivity(`Completed ${data.tasksCompleted} tasks`);
+          setActiveTasks(prev => [`✅ ${data.tasksCompleted} tasks completed at ${new Date().toLocaleTimeString()}`, ...prev].slice(0, 5));
+        }
       }
     } catch (error) {
       console.log("Monitor error:", error);
@@ -43,25 +44,24 @@ export default function AlwaysActiveMonitor() {
       right: "20px",
       background: "#0f172a",
       borderRadius: "12px",
-      padding: "12px",
+      padding: "10px 14px",
       border: "1px solid #22c55e",
-      fontSize: "11px",
-      maxWidth: "250px",
+      fontSize: "10px",
+      maxWidth: "220px",
       zIndex: 1000,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
         <div style={{
-          width: "8px",
-          height: "8px",
+          width: "6px",
+          height: "6px",
           borderRadius: "50%",
           background: "#22c55e",
           animation: "pulse 1s infinite",
         }} />
-        <span style={{ fontWeight: "bold", fontSize: "12px" }}>⚡ ACTIVE</span>
-        <span style={{ color: "#64748b", fontSize: "10px" }}>24/7 Processing</span>
+        <span style={{ fontWeight: "bold", fontSize: "10px" }}>⚡ SYSTEM ACTIVE</span>
       </div>
       {lastActivity && (
-        <p style={{ color: "#38bdf8", fontSize: "10px", marginBottom: "4px" }}>
+        <p style={{ color: "#38bdf8", fontSize: "9px", margin: 0 }}>
           {lastActivity}
         </p>
       )}
