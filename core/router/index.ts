@@ -1,32 +1,33 @@
-import { CrewAI } from "../crewai";
+// core/router/index.ts
+
+// Remove the CrewAI import since it doesn't exist
+// import { CrewAI } from "../crewai";
+
 import { buildWebsite } from "../website-builder";
 
 type RouterRequest = {
-message: string;
+  action: string;
+  data: any;
 };
 
-export async function AIRouter(
-input: RouterRequest
-) {
-const lower =
-input.message.toLowerCase();
+export async function routeRequest(request: RouterRequest) {
+  const { action, data } = request;
 
-/* WEBSITE TASKS */
-
-if (
-lower.includes("website") ||
-lower.includes("app") ||
-lower.includes("dashboard")
-) {
-return await buildWebsite(
-input.message
-);
+  switch (action) {
+    case "build-website":
+      return await buildWebsite(data);
+    
+    case "generate-content":
+      // Placeholder for content generation
+      return { success: true, message: "Content generation not implemented yet" };
+    
+    case "analyze-trends":
+      // Placeholder for trend analysis
+      return { success: true, trends: [] };
+    
+    default:
+      return { success: false, error: `Unknown action: ${action}` };
+  }
 }
 
-/* DEFAULT CREW AI */
-
-return await CrewAI({
-objective:
-input.message,
-});
-}
+export default { routeRequest };
