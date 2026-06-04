@@ -1,0 +1,30 @@
+[33m86c424df[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m recreate page files
+[33m67995f7d[m remove old page files
+[33meb5586f4[m fix: rename Page.tsx to page.tsx
+[33md515f239[m Force Vercel rebuild
+[33m02338719[m app/youtube/page.tsx
+[33m59e7702a[m Delete app/youtube/page.tsx
+[33m844839a8[m app/api/youtube/videos/route.ts
+[33md33cd3dc[m app/youtube/page.tsx
+[33mc582c6f4[m Delete app/youtube/page.tsx
+[33m2b7ea1c2[m app/youtube/page.tsx
+[33m91a92b29[m Delete app/youtube/index.tsx
+[33m57517ef0[m app/youtube/index.tsx
+[33m44a2c2de[m Delete app/youtube/index.tsx
+[33m0f48ea46[m app/youtube/index.tsx
+[33m9c3bc09d[m Delete app/youtube/page.tsx
+[33m8a4a26b4[m app/youtube/index.tsx
+[33mf5c89697[m Delete app/youtube/page.tsx
+[33m8b01b739[m app/api/youtube/stats/route.ts
+[33mb5949e1a[m Delete app/api/youtube/stats directory
+[33m793d4a7e[m app/api/youtube/channel/route.ts
+[33ma50def52[m app/api/youtube/stats/route.ts
+[33mb08c56dd[m app/youtube/page.tsx
+[33m29938a56[m Delete app/youtube/page.tsx
+[33m084bbcb3[m app/api/youtube/route.ts
+[33mf4187913[m Delete app/api/youtube/run/route.ts
+[33m09d0a819[m app/components/Sidebar.tsx
+[33m49afad0e[m Delete app/components/Sidebar.tsx
+[33m26e35b85[m app/api/youtube/run/route.ts
+[33m214b211e[m Delete app/api/youtube/run /route.ts
+[33m74a89e95[m app/api/youtube/run/route.ts
