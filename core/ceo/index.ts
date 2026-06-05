@@ -1,4 +1,5 @@
 // core/ceo/index.ts — CEO MASTER BRAIN
+import { getMasterCEO } from "@/core/ceo";
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
