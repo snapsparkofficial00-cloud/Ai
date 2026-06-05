@@ -1,57 +1,35 @@
 import { NextResponse } from "next/server";
 
-export const maxDuration = 300;
-
 export async function POST(req: Request) {
   try {
-    const { prompt, mode, imageUrl } = await req.json();
+    const { text } = await req.json();
+    if (!text) return NextResponse.json({ error: "Missing text" });
 
-    if (!prompt && mode === "text-to-video") {
-      return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
-    }
+    // Google Translate TTS — completely free
+    const encodedText = encodeURIComponent(text.slice(0, 200));
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=hi&client=tw-ob`;
 
-    const FAL_KEY = process.env.FAL_API_KEY;
-
-    if (!FAL_KEY) {
-      // Demo mode - return mock response
-      const mockRequestId = `demo-${Date.now()}`;
-      return NextResponse.json({
-        requestId: mockRequestId,
-        status: "processing",
-        message: "Demo mode. Add FAL_API_KEY for real Kling AI video generation.",
-      });
-    }
-
-    // Actual Kling AI API call via Fal.ai
-    const response = await fetch("https://fal.run/fal-ai/kling-video", {
-      method: "POST",
+    const res = await fetch(url, {
       headers: {
-        Authorization: `Key ${FAL_KEY}`,
-        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Referer: "https://translate.google.com/",
       },
-      body: JSON.stringify({
-        prompt,
-        image_url: mode === "image-to-video" ? imageUrl : undefined,
-        num_frames: 121,
-        fps: 24,
-        cfg_scale: 0.5,
-        negative_prompt: "low quality, blurry, distorted",
-      }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json({ error: data.detail || "Kling AI failed" }, { status: 500 });
+    if (!res.ok) {
+      return NextResponse.json({ error: "Google TTS failed" });
     }
+
+    const audioBuffer = await res.arrayBuffer();
+    const base64 = Buffer.from(audioBuffer).toString("base64");
 
     return NextResponse.json({
-      requestId: data.request_id || `kling-${Date.now()}`,
-      status: "processing",
+      success: true,
+      url: `data:audio/mpeg;base64,${base64}`,
+      provider: "Google TTS",
     });
 
-  } catch (error) {
-    console.error("Video generation error:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) });
   }
 }
