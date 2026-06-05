@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GROQ_KEY = process.env.GROQ_API_KEY;
 
@@ -27,60 +28,22 @@ export async function POST(req: Request) {
 }
 
 async function createPromoVideoPackage(websiteName: string, websiteUrl: string, niche: string, description?: string) {
-  const prompt = `Create a COMPLETE YouTube video production package to promote this website:
+  const prompt = `Create a COMPLETE YouTube video production package to promote: ${websiteName} (${websiteUrl})
 
-WEBSITE: ${websiteName}
-URL: ${websiteUrl}
-NICHE: ${niche}
-DESCRIPTION: ${description || "A website that provides amazing value"}
+Niche: ${niche}
 
 GENERATE:
+1. 60-second Shorts script with hook, body, CTA
+2. Voiceover text (Hindi+English mix, energetic tone)
+3. 10 visual scenes with text overlays and transitions
+4. Background music recommendation (free sources)
+5. 30 viral hashtags (Hindi + English mix)
+6. YouTube SEO description with affiliate section
+7. Thumbnail design concept (visual, text, colors)
 
-1. 🎬 VIDEO SCRIPT (60 seconds Shorts):
-   - Hook (first 2 seconds): Shocking question/statement about ${niche}
-   - Body (50 seconds): Show value of ${websiteName}, what it offers, why visit
-   - CTA (last 8 seconds): "Visit ${websiteUrl} now! Link in description"
-   - Make it ENTERTAINING and VIRAL
+Make it viral and production-ready. Think MrBeast quality.`;
 
-2. 🎙️ VOICEOVER TEXT:
-   - Full narration script
-   - Energetic tone, Hindi + English mix
-   - 60 seconds duration
-   - Pauses marked with [...]
-
-3. 🖼️ VISUAL SCENES (10 scenes):
-   For EACH scene describe:
-   - What to show on screen
-   - Text overlay (bold, large)
-   - Duration in seconds
-   - Transition effect
-
-4. 🎵 BACKGROUND MUSIC:
-   - Genre recommendation
-   - Mood: Energetic/Exciting
-   - Where to download free: YouTube Audio Library search terms
-
-5. #️⃣ 30 VIRAL HASHTAGS:
-   - Mix of high-volume + niche
-   - Hindi + English
-
-6. 📝 YOUTUBE DESCRIPTION:
-   - First 2 lines with hook
-   - What ${websiteName} offers
-   - Link: ${websiteUrl}
-   - Affiliate section
-   - Hashtags
-   - "Subscribe" CTA
-
-7. 🖼️ THUMBNAIL DESIGN:
-   - Visual concept description
-   - Text overlay
-   - Color scheme
-   - Why it will get clicks
-
-Make everything PRODUCTION-READY. Think MrBeast quality.`;
-
-  const result = await callAI(prompt);
+  const result = await smartAI(prompt);
   return NextResponse.json({ success: true, type: "promo-video-package", websiteName, websiteUrl, result });
 }
 
@@ -89,126 +52,64 @@ async function createShortsSeries(websiteName: string, websiteUrl: string, niche
 
 Niche: ${niche}
 
-Generate 7 Shorts scripts (one for each day):
-
+Generate 7 scripts (one per day):
 DAY 1 - "The Problem": Show the problem ${websiteName} solves
 DAY 2 - "The Solution": Reveal ${websiteName} as the solution
 DAY 3 - "How To": Tutorial showing how to use ${websiteName}
-DAY 4 - "Results": Show benefits/results of using ${websiteName}
+DAY 4 - "Results": Show benefits of using ${websiteName}
 DAY 5 - "Comparison": ${websiteName} vs competitors
 DAY 6 - "Secret Tip": Insider tip about ${niche}
 DAY 7 - "Full Review": Complete review + strong CTA
 
-For EACH day provide:
-- Viral title
-- 60-second script
-- Hook
-- Visual scenes
-- Text overlays
-- Hashtags
-- Best posting time
+For EACH day: viral title, 60-sec script, hook, visual scenes, hashtags, best posting time.
+Make them BINGE-WORTHY.`;
 
-Make them BINGE-WORTHY so viewers watch all 7.`;
-
-  const result = await callAI(prompt);
+  const result = await smartAI(prompt);
   return NextResponse.json({ success: true, type: "shorts-series", series: "7 Days", result });
 }
 
 async function createVideoAd(websiteName: string, websiteUrl: string, niche: string) {
-  const prompt = `Create a PROFESSIONAL VIDEO ADVERTISEMENT for: ${websiteName}
+  const prompt = `Create a 30-SECOND VIDEO AD for: ${websiteName} (${websiteUrl})
 
-URL: ${websiteUrl}
 Niche: ${niche}
 
-Generate a 30-SECOND AD:
-
 SCRIPT STRUCTURE:
-- 0-3s: ATTENTION GRAB ("Stop scrolling! This will change your ${niche} game!")
-- 3-15s: PROBLEM + SOLUTION
-- 15-25s: BENEFITS (3 key benefits with text popups)
-- 25-30s: STRONG CTA ("Click ${websiteUrl} NOW!")
+0-3s: ATTENTION GRAB
+3-15s: Problem + Solution
+15-25s: 3 Key Benefits with text popups
+25-30s: Strong CTA to visit ${websiteUrl}
 
-Also include:
-- Background music suggestions
-- Sound effects cues
-- Text animation ideas
-- Color grading recommendation
-- Target audience
-- Estimated conversion rate
+Include: music suggestions, sound effects, text animations, color grading.`;
 
-Make it CONVERT viewers into visitors.`;
-
-  const result = await callAI(prompt);
+  const result = await smartAI(prompt);
   return NextResponse.json({ success: true, type: "video-ad", duration: "30 seconds", result });
 }
 
 async function createTutorialVideo(websiteName: string, websiteUrl: string, niche: string) {
-  const prompt = `Create a STEP-BY-STEP TUTORIAL video (8 minutes) for: ${websiteName}
+  const prompt = `Create an 8-MINUTE TUTORIAL for: ${websiteName} (${websiteUrl})
 
-URL: ${websiteUrl}
 Niche: ${niche}
 
 VIDEO STRUCTURE:
-1. INTRO (30s): "In this video, I'll show you exactly how to use ${websiteName} to..."
-2. CHAPTER 1 (2 min): Getting started
-3. CHAPTER 2 (2 min): Main features walkthrough
-4. CHAPTER 3 (2 min): Pro tips & tricks
-5. CHAPTER 4 (1 min): Common mistakes to avoid
-6. OUTRO (30s): Summary + CTA to visit ${websiteUrl}
+INTRO (30s): What viewers will learn
+CHAPTER 1 (2min): Getting started
+CHAPTER 2 (2min): Main features walkthrough
+CHAPTER 3 (2min): Pro tips & tricks
+CHAPTER 4 (1min): Common mistakes to avoid
+OUTRO (30s): Summary + CTA to visit ${websiteUrl}
 
-For EACH chapter:
-- Narration script
-- Screen recording instructions
-- Zoom/highlight moments
-- Text overlays
-- Transition effects
+For each chapter: narration script, screen recording instructions, text overlays, transitions.`;
 
-Also: Thumbnail concept, SEO title, description, tags, playlist suggestion.`;
-
-  const result = await callAI(prompt);
+  const result = await smartAI(prompt);
   return NextResponse.json({ success: true, type: "tutorial-video", duration: "8 minutes", result });
 }
 
 async function createAllPromoContent(websiteName: string, websiteUrl: string, niche: string, description?: string) {
-  const [promoRes, shortsRes, adRes, tutorialRes] = await Promise.all([
-    createPromoVideoPackage(websiteName, websiteUrl, niche, description),
-    createShortsSeries(websiteName, websiteUrl, niche),
-    createVideoAd(websiteName, websiteUrl, niche),
-    createTutorialVideo(websiteName, websiteUrl, niche),
-  ]);
-
-  const promoData = await promoRes.json();
-  const shortsData = await shortsRes.json();
-  const adData = await adRes.json();
-  const tutorialData = await tutorialRes.json();
-
-  return NextResponse.json({
-    success: true,
-    websiteName,
-    websiteUrl,
-    niche,
-    contentPackage: {
-      promoVideo: promoData,
-      shortsSeries: shortsData,
-      videoAd: adData,
-      tutorial: tutorialData,
-    },
-    promotionPlan: {
-      week1: "Post Promo Short + Day 1 of Series",
-      week2: "Post Tutorial + Days 2-4 of Series",
-      week3: "Post Video Ad + Days 5-7 of Series",
-      week4: "Analyze + Optimize + Repost best performer",
-      expectedResults: "50K-200K views, 5K-20K website visits",
-    },
-  });
-}
-  
-  // Generate everything in parallel
-  const [promoRes, shortsRes, adRes, tutorialRes] = await Promise.all([
-    createPromoVideoPackage(websiteName, websiteUrl, niche, description),
-    createShortsSeries(websiteName, websiteUrl, niche),
-    createVideoAd(websiteName, websiteUrl, niche),
-    createTutorialVideo(websiteName, websiteUrl, niche),
+  const [promoResult, shortsResult, adResult, tutorialResult] = await Promise.all([
+    smartAI(`Create promo video package for ${websiteName}: ${niche}. Script, voiceover, scenes, hashtags, SEO, thumbnail.`),
+    smartAI(`Create 7-day Shorts series for ${websiteName}: ${niche}. One script per day.`),
+    smartAI(`Create 30-second video ad for ${websiteName}: ${niche}.`),
+    smartAI(`Create 8-minute tutorial for ${websiteName}: ${niche}. Chapters included.`),
   ]);
 
   return NextResponse.json({
@@ -217,10 +118,10 @@ async function createAllPromoContent(websiteName: string, websiteUrl: string, ni
     websiteUrl,
     niche,
     contentPackage: {
-      promoVideo: await promoRes.json(),
-      shortsSeries: await shortsRes.json(),
-      videoAd: await adRes.json(),
-      tutorial: await tutorialRes.json(),
+      promoVideo: promoResult,
+      shortsSeries: shortsResult,
+      videoAd: adResult,
+      tutorial: tutorialResult,
     },
     promotionPlan: {
       week1: "Post Promo Short + Day 1 of Series",
@@ -232,7 +133,27 @@ async function createAllPromoContent(websiteName: string, websiteUrl: string, ni
   });
 }
 
-async function callAI(prompt: string) {
+// ========== SMART AI ROUTER ==========
+// Tries OpenAI → Gemini → Groq
+
+async function smartAI(prompt: string): Promise<string> {
+  // 1. Try OpenAI
+  if (OPENAI_KEY) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
+        body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (text) return text;
+      }
+    } catch {}
+  }
+
+  // 2. Try Gemini
   if (GEMINI_KEY) {
     try {
       const res = await fetch(
@@ -243,11 +164,15 @@ async function callAI(prompt: string) {
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000, temperature: 0.9 } }),
         }
       );
-      const data = await res.json();
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      }
     } catch {}
   }
-  
+
+  // 3. Try Groq
   if (GROQ_KEY) {
     try {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -255,10 +180,13 @@ async function callAI(prompt: string) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
         body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
       });
-      const data = await res.json();
-      return data?.choices?.[0]?.message?.content || "";
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (text) return text;
+      }
     } catch {}
   }
-  
-  return "AI unavailable - add API keys";
-}
+
+  return "No AI API available. Please add OPENAI_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY to Vercel environment variables.";
+  }
