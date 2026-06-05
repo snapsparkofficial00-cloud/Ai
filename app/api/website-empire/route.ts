@@ -187,7 +187,7 @@ async function deepAnalysis(domain: string, apiKey: string) {
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile", max_tokens: 3000,
       messages: [
-        { role: "system", content: `Analyze website ${domain || "in " + niche}. Provide: SEO audit, monetization audit, content audit, traffic estimation, competitor analysis, improvement roadmap with timeline. Score out of 100.` },
+        { role: "system", content: `Analyze website: ${domain || "the provided website"}. Provide: SEO audit, monetization audit, content audit, traffic estimation, competitor analysis, improvement roadmap with timeline. Score out of 100.` },
         { role: "user", content: `Analyze ${domain || "my website"}` }
       ],
     }),
