@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getMasterCEO } from "../../../../core/ceo";
@@ -29,35 +28,52 @@ export async function GET() {
     .eq("id", task.id);
 
   try {
-    const ceo = getMasterCEO();
     let result;
 
-    // 3. Execute the task based on its type
     switch (task.type) {
       case "short_video":
-        // Reuse your existing auto‑pilot logic – generate a Short
-        // (you'll need to move that logic to a shared function)
-        result = await generateShortVideo(task.payload.niche);
+        // Call your existing auto‑pilot endpoint to generate a Short
+        const shortRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/youtube/autonomous`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate", niche: task.payload.niche, type: "short" }),
+        });
+        result = await shortRes.json();
         break;
+
       case "long_video":
-        result = await generateLongVideo(task.payload.niche);
+        const longRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/youtube/autonomous`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate", niche: task.payload.niche, type: "long" }),
+        });
+        result = await longRes.json();
         break;
-      // Add more cases: "income_stream", "freelance_gig", etc.
+
+      case "build_empire":
+        const ceo = getMasterCEO();
+        result = await ceo.buildEmpire(task.payload.niche);
+        break;
+
       default:
         throw new Error(`Unknown task type: ${task.type}`);
     }
 
-    // 4. Mark as completed
+    // 3. Mark as completed
     await supabase
       .from("task_queue")
       .update({ status: "completed", finished_at: new Date().toISOString(), result: JSON.stringify(result) })
       .eq("id", task.id);
+
   } catch (err) {
-    // 5. Mark as failed, increment attempts
     const attempts = (task.attempts || 0) + 1;
     await supabase
       .from("task_queue")
-      .update({ status: attempts >= 3 ? "failed" : "pending", attempts, error: String(err) })
+      .update({
+        status: attempts >= 3 ? "failed" : "pending",
+        attempts,
+        error: String(err),
+      })
       .eq("id", task.id);
   }
 
