@@ -1,9 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 
-type Tab = "command" | "income" | "instagram" | "web" | "freelance" | "affiliate" | "agents";
 
-const INCOME_TYPES = [
+const tabs = [
   { id: "youtube", label: "📺 YouTube", color: "#ef4444" },
   { id: "affiliate", label: "🔗 Affiliate", color: "#f97316" },
   { id: "instagram", label: "📸 Instagram", color: "#ec4899" },
