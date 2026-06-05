@@ -170,13 +170,38 @@ Also: Thumbnail concept, SEO title, description, tags, playlist suggestion.`;
 }
 
 async function createAllPromoContent(websiteName: string, websiteUrl: string, niche: string, description?: string) {
-  // Generate everything in parallel
   const [promoRes, shortsRes, adRes, tutorialRes] = await Promise.all([
     createPromoVideoPackage(websiteName, websiteUrl, niche, description),
     createShortsSeries(websiteName, websiteUrl, niche),
     createVideoAd(websiteName, websiteUrl, niche),
     createTutorialVideo(websiteName, websiteUrl, niche),
   ]);
+
+  const promoData = await promoRes.json();
+  const shortsData = await shortsRes.json();
+  const adData = await adRes.json();
+  const tutorialData = await tutorialRes.json();
+
+  return NextResponse.json({
+    success: true,
+    websiteName,
+    websiteUrl,
+    niche,
+    contentPackage: {
+      promoVideo: promoData,
+      shortsSeries: shortsData,
+      videoAd: adData,
+      tutorial: tutorialData,
+    },
+    promotionPlan: {
+      week1: "Post Promo Short + Day 1 of Series",
+      week2: "Post Tutorial + Days 2-4 of Series",
+      week3: "Post Video Ad + Days 5-7 of Series",
+      week4: "Analyze + Optimize + Repost best performer",
+      expectedResults: "50K-200K views, 5K-20K website visits",
+    },
+  });
+}
   
   // Generate everything in parallel
   const [promoRes, shortsRes, adRes, tutorialRes] = await Promise.all([
