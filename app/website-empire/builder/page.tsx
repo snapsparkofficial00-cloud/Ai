@@ -54,7 +54,8 @@ export default function WebsiteBuilderPage() {
     return false;
   }
 
-  async function buildWebsite() {
+  
+async function buildWebsite() {
     if (!niche) return;
     setLoading(true);
     setWebsiteCode("");
@@ -62,21 +63,43 @@ export default function WebsiteBuilderPage() {
     addLog(`🚀 Building website for: ${niche}`);
 
     try {
-      // Step 1: Build main website
       addLog("🤖 AI generating website...");
+      
       const res = await fetch("/api/website-empire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "build-site", niche }),
       });
-      const data = await res.json();
+      
+      // Check if response is OK
+      if (!res.ok) {
+        const text = await res.text();
+        addLog(`❌ Server error: ${res.status}`);
+        console.error("Response:", text.slice(0, 500));
+        setLoading(false);
+        return;
+      }
+      
+      // Try to parse JSON safely
+      let data;
+      try {
+        const text = await res.text();
+        console.log("Raw response:", text.slice(0, 200));
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        addLog(`❌ JSON Parse Error`);
+        console.error("Parse error:", parseErr);
+        setLoading(false);
+        return;
+      }
       
       if (data.success && data.website) {
         setWebsiteCode(data.website);
         addLog("✅ Website generated successfully!");
+        addLog(`📏 Size: ${(data.website.length / 1024).toFixed(1)} KB`);
 
-        // Step 2: Generate pages
-        addLog("📄 Generating all pages...");
+        // Generate pages
+        addLog("📄 Generating additional pages...");
         const pagesRes = await fetch("/api/website-empire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -88,20 +111,37 @@ export default function WebsiteBuilderPage() {
           setGeneratedPages(pagesData.pages);
           addLog(`✅ ${pagesData.pageCount} pages generated!`);
         }
-        
-        // Step 3: Auto-save to Supabase
-        await saveToSupabase();
-        
-        addLog("🎉 Build complete! Go to Projects to see all websites.");
+
+        // Save to Supabase
+        addLog("💾 Saving to cloud...");
+        try {
+          await fetch("/api/website-projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: Date.now(),
+              niche,
+              websiteCode: data.website,
+              pages: pagesData.pages || {},
+            }),
+          });
+          addLog("✅ Saved to Supabase!");
+          loadProjectCount();
+        } catch {
+          addLog("⚠️ Cloud save skipped");
+        }
+
+        addLog("🎉 Build complete! Go to Projects to see all.");
       } else {
-        addLog("❌ Failed to generate website. Check API keys.");
+        addLog(`❌ Failed: ${data.error || "Unknown error"}`);
+        if (data.details) addLog(`Details: ${data.details.slice(0, 200)}`);
       }
-    } catch (err) {
-      addLog(`❌ Error: ${String(err)}`);
+    } catch (err: any) {
+      addLog(`❌ Error: ${err.message || String(err)}`);
+      console.error("Full error:", err);
     }
     setLoading(false);
   }
-
   function downloadWebsite() {
     let allCode = websiteCode;
     Object.entries(generatedPages).forEach(([name, code]) => {
