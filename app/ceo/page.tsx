@@ -24,7 +24,7 @@ const INCOME_TYPES = [
 ];
 
 export default function CEOPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("command");
+  const [activeTab, setActiveTab] = useState("command");
   const [niche, setNiche] = useState("BMW Cars and Supercars");
   const [loading, setLoading] = useState(false);
   const [activeAction, setActiveAction] = useState("");
