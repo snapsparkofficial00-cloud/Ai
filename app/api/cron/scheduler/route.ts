@@ -8,9 +8,9 @@ const supabase = createClient(
 
 export async function GET() {
   // 1. Determine what needs to be generated based on your schedule
-  //    For example: every 2 days a Short, every week a Long video.
   const lastShort = await getLastGenerated("short");
   const lastLong = await getLastGenerated("long");
+  const lastEmpire = await getLastGenerated("empire"); // ← new
   const now = Date.now();
 
   const tasks = [];
@@ -28,6 +28,14 @@ export async function GET() {
     });
   }
 
+  // 🆕 Build empire once per week
+  if (now - lastEmpire > 7 * 24 * 60 * 60 * 1000) {
+    tasks.push({
+      type: "build_empire",
+      payload: { niche: "BMW Cars" }, // or use a dynamic niche variable
+    });
+  }
+
   // 2. Insert tasks into the queue (only if not already pending)
   for (const task of tasks) {
     const { error } = await supabase
@@ -36,16 +44,17 @@ export async function GET() {
     if (error) console.error("Insert error", error);
   }
 
-  // 3. Update the last generated timestamps (store them in a settings table)
+  // 3. Update the last generated timestamps
   if (tasks.some(t => t.type === "short_video"))
     await updateLastGenerated("short", now);
   if (tasks.some(t => t.type === "long_video"))
     await updateLastGenerated("long", now);
+  if (tasks.some(t => t.type === "build_empire"))
+    await updateLastGenerated("empire", now);       // 🆕
 
   return NextResponse.json({ success: true, tasksEnqueued: tasks.length });
 }
 
-// Helper functions (you can store last generated dates in a settings table)
 async function getLastGenerated(type: string): Promise<number> {
   const { data } = await supabase
     .from("settings")
@@ -54,6 +63,7 @@ async function getLastGenerated(type: string): Promise<number> {
     .single();
   return data?.value || 0;
 }
+
 async function updateLastGenerated(type: string, timestamp: number) {
   await supabase
     .from("settings")
