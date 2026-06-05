@@ -12,7 +12,6 @@ export default function WebsiteBuilderPage() {
   const [log, setLog] = useState<string[]>([]);
   const [projectCount, setProjectCount] = useState(0);
 
-  // Load project count from Supabase
   useEffect(() => {
     loadProjectCount();
   }, []);
@@ -29,6 +28,86 @@ export default function WebsiteBuilderPage() {
     setLog(prev => [`🏗️ ${new Date().toLocaleTimeString()} — ${msg}`, ...prev.slice(0, 49)]);
   }
 
+  async function buildWebsite() {
+    if (!niche) return;
+    setLoading(true);
+    setWebsiteCode("");
+    setGeneratedPages({});
+    addLog(`🚀 Building website for: ${niche}`);
+
+    try {
+      addLog("🤖 AI generating website...");
+      const res = await fetch("/api/website-empire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "build-site", niche }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        addLog(`❌ Server error: ${res.status}`);
+        console.error("Response:", text.slice(0, 500));
+        setLoading(false);
+        return;
+      }
+
+      let data;
+      try {
+        const text = await res.text();
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        addLog(`❌ JSON Parse Error`);
+        setLoading(false);
+        return;
+      }
+
+      if (data.success && data.website) {
+        setWebsiteCode(data.website);
+        addLog("✅ Website generated successfully!");
+        addLog(`📏 Size: ${(data.website.length / 1024).toFixed(1)} KB`);
+
+        addLog("📄 Generating additional pages...");
+        const pagesRes = await fetch("/api/website-empire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate-pages", niche }),
+        });
+        const pagesData = await pagesRes.json();
+
+        if (pagesData.success) {
+          setGeneratedPages(pagesData.pages);
+          addLog(`✅ ${pagesData.pageCount} pages generated!`);
+        }
+
+        addLog("💾 Saving to cloud...");
+        try {
+          await fetch("/api/website-projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: Date.now(),
+              niche,
+              websiteCode: data.website,
+              pages: pagesData.pages || {},
+            }),
+          });
+          addLog("✅ Saved to Supabase!");
+          loadProjectCount();
+        } catch {
+          addLog("⚠️ Cloud save skipped");
+        }
+
+        addLog("🎉 Build complete! Go to Projects to see all.");
+      } else {
+        addLog(`❌ Failed: ${data.error || "Unknown error"}`);
+        if (data.details) addLog(`Details: ${data.details.slice(0, 200)}`);
+      }
+    } catch (err: any) {
+      addLog(`❌ Error: ${err.message || String(err)}`);
+    }
+    setLoading(false);
+  }
+
   async function buildMoneySite() {
     if (!niche) return;
     setLoading(true);
@@ -42,17 +121,16 @@ export default function WebsiteBuilderPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ niche }),
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.website) {
         setWebsiteCode(data.website);
         addLog("✅ Money site generated!");
         addLog("📊 Includes: AdSense, Affiliate, Email Capture, SEO, Social Share");
         addLog("📏 Size: " + (data.website.length / 1024).toFixed(1) + " KB");
         addLog("💡 Deploy this site to start earning!");
-        
-        // Save to Supabase
+
         try {
           await fetch("/api/website-projects", {
             method: "POST",
@@ -65,10 +143,56 @@ export default function WebsiteBuilderPage() {
             }),
           });
           addLog("✅ Saved to cloud!");
+          loadProjectCount();
         } catch {}
-        
       } else {
         addLog("❌ Failed: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      addLog("❌ Error: " + (err.message || String(err)));
+    }
+    setLoading(false);
+  }
+
+  async function buildToolSite() {
+    if (!niche) return;
+    setLoading(true);
+    setWebsiteCode("");
+    setGeneratedPages({});
+    addLog(`🛠️ Building TOOL-RICH site for: ${niche}`);
+
+    try {
+      const res = await fetch("/api/website-empire/build-tool-site", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ niche }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.website) {
+        setWebsiteCode(data.website);
+        addLog("✅ Tool-rich website generated!");
+        addLog("📏 Size: " + (data.website.length / 1024).toFixed(1) + " KB");
+        addLog("🛠️ Includes: Calculators, Games, AI Tools, Widgets, Dashboard");
+        addLog("💡 People will STAY and USE these tools daily!");
+
+        try {
+          await fetch("/api/website-projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: Date.now(),
+              niche: niche + " (🛠️ Tool Site)",
+              websiteCode: data.website,
+              pages: {},
+            }),
+          });
+          addLog("✅ Saved to cloud!");
+          loadProjectCount();
+        } catch {}
+      } else {
+        addLog("❌ Failed: " + (data.error || "Unknown"));
       }
     } catch (err: any) {
       addLog("❌ Error: " + (err.message || String(err)));
@@ -101,158 +225,6 @@ export default function WebsiteBuilderPage() {
     return false;
   }
 
-  async function buildToolSite() {
-    if (!niche) return;
-    setLoading(true);
-    setWebsiteCode("");
-    setGeneratedPages({});
-    addLog(`🛠️ Building TOOL-RICH site for: ${niche}`);
-
-    try {
-      const res = await fetch("/api/website-empire/build-tool-site", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ niche }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success && data.website) {
-        setWebsiteCode(data.website);
-        addLog("✅ Tool-rich website generated!");
-        addLog("📏 Size: " + (data.website.length / 1024).toFixed(1) + " KB");
-        addLog("🛠️ Includes: Calculators, Games, AI Tools, Widgets, Dashboard");
-        addLog("💡 People will STAY and USE these tools daily!");
-        
-        try {
-          await fetch("/api/website-projects", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: Date.now(),
-              niche: niche + " (🛠️ Tool Site)",
-              websiteCode: data.website,
-              pages: {},
-            }),
-          });
-          addLog("✅ Saved to cloud!");
-        } catch {}
-        
-      } else {
-        addLog("❌ Failed: " + (data.error || "Unknown"));
-      }
-    } catch (err: any) {
-      addLog("❌ Error: " + (err.message || String(err)));
-    }
-    setLoading(false);
-  }
-
-async function buildWebsite() {
-    if (!niche) return;
-    setLoading(true);
-    setWebsiteCode("");
-    setGeneratedPages({});
-    addLog(`🚀 Building website for: ${niche}`);
-
-    try {
-      addLog("🤖 AI generating website...");
-      
-      const res = await fetch("/api/website-empire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "build-site", niche }),
-      });
-      
-      // Check if response is OK
-      if (!res.ok) {
-        const text = await res.text();
-        addLog(`❌ Server error: ${res.status}`);
-        console.error("Response:", text.slice(0, 500));
-        setLoading(false);
-        return;
-      }
-      
-      // Try to parse JSON safely
-      let data;
-      try {
-        const text = await res.text();
-        console.log("Raw response:", text.slice(0, 200));
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        addLog(`❌ JSON Parse Error`);
-        console.error("Parse error:", parseErr);
-        setLoading(false);
-        return;
-      }
-      
-      if (data.success && data.website) {
-        setWebsiteCode(data.website);
-        addLog("✅ Website generated successfully!");
-        addLog(`📏 Size: ${(data.website.length / 1024).toFixed(1)} KB`);
-
-        // Generate pages
-        addLog("📄 Generating additional pages...");
-        const pagesRes = await fetch("/api/website-empire", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "generate-pages", niche }),
-        });
-        const pagesData = await pagesRes.json();
-        
-        if (pagesData.success) {
-          setGeneratedPages(pagesData.pages);
-          addLog(`✅ ${pagesData.pageCount} pages generated!`);
-        }
-
-        // Save to Supabase
-        addLog("💾 Saving to cloud...");
-        try {
-          await fetch("/api/website-projects", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: Date.now(),
-              niche,
-              websiteCode: data.website,
-              pages: pagesData.pages || {},
-            }),
-          });
-          addLog("✅ Saved to Supabase!");
-          loadProjectCount();
-        } catch {
-          addLog("⚠️ Cloud save skipped");
-        }
-
-        addLog("🎉 Build complete! Go to Projects to see all.");
-      } else {
-        addLog(`❌ Failed: ${data.error || "Unknown error"}`);
-        if (data.details) addLog(`Details: ${data.details.slice(0, 200)}`);
-      }
-    } catch (err: any) {
-      addLog(`❌ Error: ${err.message || String(err)}`);
-      console.error("Full error:", err);
-    }
-    setLoading(false);
-  }
-  
-  <button onClick={buildMoneySite} disabled={loading || !niche}
-  style={{
-    padding: "14px 28px", borderRadius: "12px",
-    background: loading ? "#333" : "linear-gradient(135deg, #f59e0b, #ef4444)",
-    border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
-  }}>
-  {loading ? "⏳ Building..." : "💰 BUILD MONEY SITE"}
-</button>
-
-  <button onClick={buildToolSite} disabled={loading || !niche}
-  style={{
-    padding: "14px 28px", borderRadius: "12px",
-    background: loading ? "#333" : "linear-gradient(135deg, #8b5cf6, #ec4899)",
-    border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
-  }}>
-  {loading ? "⏳ Building..." : "🛠️ BUILD TOOL SITE"}
-</button>
-  
   function downloadWebsite() {
     let allCode = websiteCode;
     Object.entries(generatedPages).forEach(([name, code]) => {
@@ -271,11 +243,11 @@ async function buildWebsite() {
 
   return (
     <main style={{
-      background: "linear-gradient(135deg, #0a0a0a, #0a0a2e)", 
+      background: "linear-gradient(135deg, #0a0a0a, #0a0a2e)",
       minHeight: "100vh", color: "white", padding: "24px", fontFamily: "system-ui",
     }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        
+
         {/* NAVIGATION */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
           <Link href="/website-empire" style={{ textDecoration: "none" }}>
@@ -318,40 +290,63 @@ async function buildWebsite() {
               color: "white", fontSize: "15px",
             }}
           />
-          <button onClick={buildWebsite} disabled={loading || !niche}
-            style={{
-              padding: "14px 28px", borderRadius: "12px",
-              background: loading ? "#333" : "linear-gradient(135deg, #00ff88, #00aaff)",
-              border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
-            }}>
-            {loading ? "⏳ Building..." : "🚀 BUILD WEBSITE"}
-          </button>
+          
+          {/* BUTTONS ROW */}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button onClick={buildWebsite} disabled={loading || !niche}
+              style={{
+                padding: "14px 20px", borderRadius: "12px",
+                background: loading ? "#333" : "linear-gradient(135deg, #00ff88, #00aaff)",
+                border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "14px",
+              }}>
+              {loading ? "⏳..." : "🚀 BUILD"}
+            </button>
+            
+            <button onClick={buildMoneySite} disabled={loading || !niche}
+              style={{
+                padding: "14px 20px", borderRadius: "12px",
+                background: loading ? "#333" : "linear-gradient(135deg, #f59e0b, #ef4444)",
+                border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "14px",
+              }}>
+              {loading ? "⏳..." : "💰 MONEY SITE"}
+            </button>
+            
+            <button onClick={buildToolSite} disabled={loading || !niche}
+              style={{
+                padding: "14px 20px", borderRadius: "12px",
+                background: loading ? "#333" : "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "14px",
+              }}>
+              {loading ? "⏳..." : "🛠️ TOOL SITE"}
+            </button>
+          </div>
+          
           {websiteCode && (
             <>
               <button onClick={() => setPreviewMode(!previewMode)}
                 style={{
-                  padding: "14px 28px", borderRadius: "12px",
+                  padding: "14px 20px", borderRadius: "12px",
                   background: previewMode ? "#00ff88" : "rgba(255,255,255,0.1)",
                   border: "1px solid rgba(255,255,255,0.2)",
-                  color: previewMode ? "#000" : "white", cursor: "pointer", fontSize: "15px",
+                  color: previewMode ? "#000" : "white", cursor: "pointer", fontSize: "14px",
                 }}>
-                {previewMode ? "📝 View Code" : "👁️ Preview"}
+                {previewMode ? "📝 Code" : "👁️ Preview"}
               </button>
               <button onClick={downloadWebsite}
                 style={{
-                  padding: "14px 28px", borderRadius: "12px",
+                  padding: "14px 20px", borderRadius: "12px",
                   background: "#f59e0b", border: "none",
-                  color: "#000", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
+                  color: "#000", fontWeight: "bold", cursor: "pointer", fontSize: "14px",
                 }}>
                 📥 Download
               </button>
               <button onClick={saveToSupabase}
                 style={{
-                  padding: "14px 28px", borderRadius: "12px",
+                  padding: "14px 20px", borderRadius: "12px",
                   background: "#8b5cf6", border: "none",
-                  color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
+                  color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "14px",
                 }}>
-                ☁️ Save to Cloud
+                ☁️ Save
               </button>
             </>
           )}
@@ -360,7 +355,7 @@ async function buildWebsite() {
         {/* PAGE TABS */}
         {Object.keys(generatedPages).length > 0 && (
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
-            <button onClick={() => setWebsiteCode(websiteCode)} style={{
+            <button onClick={() => { setActivePage("index"); setWebsiteCode(websiteCode); }} style={{
               padding: "8px 16px", borderRadius: "8px", textTransform: "capitalize",
               background: activePage === "index" ? "#00ff88" : "rgba(255,255,255,0.1)",
               border: "none", color: activePage === "index" ? "#000" : "white",
