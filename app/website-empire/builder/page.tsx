@@ -101,6 +101,52 @@ export default function WebsiteBuilderPage() {
     return false;
   }
 
+  async function buildToolSite() {
+    if (!niche) return;
+    setLoading(true);
+    setWebsiteCode("");
+    setGeneratedPages({});
+    addLog(`🛠️ Building TOOL-RICH site for: ${niche}`);
+
+    try {
+      const res = await fetch("/api/website-empire/build-tool-site", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ niche }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.website) {
+        setWebsiteCode(data.website);
+        addLog("✅ Tool-rich website generated!");
+        addLog("📏 Size: " + (data.website.length / 1024).toFixed(1) + " KB");
+        addLog("🛠️ Includes: Calculators, Games, AI Tools, Widgets, Dashboard");
+        addLog("💡 People will STAY and USE these tools daily!");
+        
+        try {
+          await fetch("/api/website-projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: Date.now(),
+              niche: niche + " (🛠️ Tool Site)",
+              websiteCode: data.website,
+              pages: {},
+            }),
+          });
+          addLog("✅ Saved to cloud!");
+        } catch {}
+        
+      } else {
+        addLog("❌ Failed: " + (data.error || "Unknown"));
+      }
+    } catch (err: any) {
+      addLog("❌ Error: " + (err.message || String(err)));
+    }
+    setLoading(false);
+  }
+
 async function buildWebsite() {
     if (!niche) return;
     setLoading(true);
@@ -188,6 +234,7 @@ async function buildWebsite() {
     }
     setLoading(false);
   }
+  
   <button onClick={buildMoneySite} disabled={loading || !niche}
   style={{
     padding: "14px 28px", borderRadius: "12px",
@@ -195,6 +242,15 @@ async function buildWebsite() {
     border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
   }}>
   {loading ? "⏳ Building..." : "💰 BUILD MONEY SITE"}
+</button>
+
+  <button onClick={buildToolSite} disabled={loading || !niche}
+  style={{
+    padding: "14px 28px", borderRadius: "12px",
+    background: loading ? "#333" : "linear-gradient(135deg, #8b5cf6, #ec4899)",
+    border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
+  }}>
+  {loading ? "⏳ Building..." : "🛠️ BUILD TOOL SITE"}
 </button>
   
   function downloadWebsite() {
