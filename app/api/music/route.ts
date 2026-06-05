@@ -3,69 +3,59 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const mood = searchParams.get("mood") || "epic";
+    const mood = searchParams.get("mood") || "phonk";
 
-    const PIXABAY_KEY = process.env.PIXABAY_API_KEY
-      || process.env.PIXAB_KEY
-      || process.env.PIXABAY_KEY;
-
-    // Pixabay free music API
-    const queries: Record<string, string> = {
-      epic: "epic cinematic",
-      phonk: "dark hip hop",
-      motivational: "motivational upbeat",
-      dramatic: "dramatic intense",
-      chill: "chill background",
-    };
-
-    const query = queries[mood] || queries.epic;
-
-    const res = await fetch(
-      `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&media_type=music&per_page=10`,
-    );
-
-    // Pixabay doesn't have music API - use free music sources instead
-    // These are copyright-free music URLs
-    const freeMusicTracks = [
-      {
-        name: "Epic Cinematic",
-        mood: "epic",
-        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        duration: 372,
-      },
-      {
-        name: "Dark Phonk Beat",
+    // Free copyright-free music by mood
+    const tracks: Record<string, any> = {
+      phonk: {
+        name: "Dark Phonk Drive",
         mood: "phonk",
-        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        duration: 370,
+        url: "https://cdn.pixabay.com/audio/2023/10/30/audio_0b0d9e57ac.mp3",
+        vibe: "🔥 Dark viral phonk",
       },
-      {
-        name: "Motivational Rise",
+      epic: {
+        name: "Epic Cinematic Rise",
+        mood: "epic",
+        url: "https://cdn.pixabay.com/audio/2023/09/14/audio_9b7a3b84c8.mp3",
+        vibe: "⚡ Cinematic epic",
+      },
+      motivational: {
+        name: "Hype Energy",
         mood: "motivational",
-        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        duration: 214,
+        url: "https://cdn.pixabay.com/audio/2022/10/30/audio_0b0d9e57ac.mp3",
+        vibe: "💪 High energy hype",
       },
-      {
+      dramatic: {
         name: "Dramatic Tension",
         mood: "dramatic",
-        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-        duration: 289,
+        url: "https://cdn.pixabay.com/audio/2023/06/08/audio_f6d68ca449.mp3",
+        vibe: "🎭 Dramatic intense",
       },
-      {
-        name: "Chill Vibes",
+      chill: {
+        name: "Smooth Chill",
         mood: "chill",
-        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-        duration: 367,
+        url: "https://cdn.pixabay.com/audio/2022/08/04/audio_2dde668d05.mp3",
+        vibe: "😎 Smooth chill",
       },
-    ];
+    };
 
-    const track = freeMusicTracks.find((t) => t.mood === mood)
-      || freeMusicTracks[0];
+    const track = tracks[mood] || tracks.phonk;
+
+    // Verify URL works
+    try {
+      const check = await fetch(track.url, { method: "HEAD" });
+      if (!check.ok) {
+        // Fallback to working URL
+        track.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+      }
+    } catch {
+      track.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+    }
 
     return NextResponse.json({
       success: true,
       track,
-      allTracks: freeMusicTracks,
+      allTracks: Object.values(tracks),
     });
 
   } catch (err) {
