@@ -51,7 +51,7 @@ export async function createFiverrGig(gigData: FiverrGigData, approvalId: string
     }
 
     // Save session for later approval
-    const cookies = await page.context().cookies();
+    const cookies = await page.cookies();
     const currentUrl = page.url();
     await saveApprovalSession(approvalId, cookies, currentUrl);
 
