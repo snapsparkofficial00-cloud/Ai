@@ -40,6 +40,47 @@ export async function POST(req: Request) {
     const scriptData = await scriptRes.json();
     const script = scriptData?.choices?.[0]?.message?.content || "";
 
+    // After generating title, add this:
+const hashtagRes = await fetch(
+  "https://api.groq.com/openai/v1/chat/completions",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${GROQ_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 200,
+      messages: [
+        {
+          role: "system",
+          content: "Generate viral YouTube hashtags. Return ONLY hashtags separated by spaces. Mix Hindi and English.",
+        },
+        {
+          role: "user",
+          content: `30 hashtags for: ${niche} ${type === "short" ? "shorts" : "video"}`,
+        },
+      ],
+    }),
+  }
+);
+const hashtagData = await hashtagRes.json();
+const hashtags = hashtagData?.choices?.[0]?.message?.content || "";
+
+// Then add hashtags to the return:
+return NextResponse.json({
+  success: true,
+  type,
+  title,
+  script,
+  hashtags,
+  thumbnailUrl,
+  niche: channelNiche,
+  language: "Hindi",
+  scheduledAt: new Date().toISOString(),
+});
+
     // Step 2: Generate title
     const titleRes = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
