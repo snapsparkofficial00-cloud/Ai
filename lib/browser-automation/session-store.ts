@@ -1,8 +1,13 @@
+// lib/browser-automation/session-store.ts
 import { Cookie } from 'puppeteer';
 
 const sessions = new Map<string, { cookies: Cookie[]; url: string }>();
 
-export async function saveApprovalSession(id: string, cookies: Cookie[], url: string) {
+export async function saveApprovalSession(
+  id: string,
+  cookies: Cookie[],
+  url: string
+) {
   sessions.set(id, { cookies, url });
 }
 
