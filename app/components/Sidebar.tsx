@@ -91,6 +91,8 @@ export default function Sidebar({ onToggle }: { onToggle?: (open: boolean) => vo
           <SectionLabel label="🤖 AI AGENTS" />
           <MenuItem href="/youtube" label="📺 YouTube AI" />
           <MenuItem href="/website-empire" label="🌐 Website Empire" />
+<MenuItem href="/website-empire/builder" label="🏗️ Builder" />
+<MenuItem href="/website-empire/projects" label="📁 Projects" />
           <MenuItem href="/ceo" label="👑 CEO AI" />
           <MenuItem href="/brain" label="🧠 AI Brain" />
           <MenuItem href="/autopilot" label="🤖 Auto Pilot" />
