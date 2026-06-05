@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: snapspark-pipeline
+    env: python
+    buildCommand: pip install -r render-backend/requirements.txt
+    startCommand: gunicorn render-backend.server:app
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PIXABAY_API_KEY
+        sync: false
+      - key: YOUTUBE_CLIENT_ID
+        sync: false
+      - key: YOUTUBE_CLIENT_SECRET
+        sync: false
+      - key: YOUTUBE_REFRESH_TOKEN
+        sync: false
