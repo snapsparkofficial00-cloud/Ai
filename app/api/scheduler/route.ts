@@ -40,48 +40,35 @@ export async function POST(req: Request) {
     const scriptData = await scriptRes.json();
     const script = scriptData?.choices?.[0]?.message?.content || "";
 
-    // After generating title, add this:
-const hashtagRes = await fetch(
-  "https://api.groq.com/openai/v1/chat/completions",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${GROQ_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      max_tokens: 200,
-      messages: [
-        {
-          role: "system",
-          content: "Generate viral YouTube hashtags. Return ONLY hashtags separated by spaces. Mix Hindi and English.",
+    // Step 2: Generate hashtags
+    const hashtagRes = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${GROQ_KEY}`,
         },
-        {
-          role: "user",
-          content: `30 hashtags for: ${niche} ${type === "short" ? "shorts" : "video"}`,
-        },
-      ],
-    }),
-  }
-);
-const hashtagData = await hashtagRes.json();
-const hashtags = hashtagData?.choices?.[0]?.message?.content || "";
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          max_tokens: 200,
+          messages: [
+            {
+              role: "system",
+              content: "Generate viral YouTube hashtags. Return ONLY hashtags separated by spaces. Mix Hindi and English.",
+            },
+            {
+              role: "user",
+              content: `30 hashtags for: ${niche} ${type === "short" ? "shorts" : "video"}`,
+            },
+          ],
+        }),
+      }
+    );
+    const hashtagData = await hashtagRes.json();
+    const hashtags = hashtagData?.choices?.[0]?.message?.content || "";
 
-// Then add hashtags to the return:
-return NextResponse.json({
-  success: true,
-  type,
-  title,
-  script,
-  hashtags,
-  thumbnailUrl,
-  niche: channelNiche,
-  language: "Hindi",
-  scheduledAt: new Date().toISOString(),
-});
-
-    // Step 2: Generate title
+    // Step 3: Generate title
     const titleRes = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -107,10 +94,10 @@ return NextResponse.json({
     const titleData = await titleRes.json();
     const title = titleData?.choices?.[0]?.message?.content || `${channelNiche} - AI Video`;
 
-    // Step 3: Generate thumbnail prompt
+    // Step 4: Generate thumbnail prompt
     const thumbPrompt = `YouTube thumbnail: ${channelNiche}, ${type === "short" ? "vertical 9:16" : "horizontal 16:9"}, bold Hindi text overlay, vibrant colors, dramatic lighting, viral`;
 
-    // Step 4: Generate thumbnail image
+    // Step 5: Generate thumbnail image
     let thumbnailUrl = "";
     try {
       const thumbRes = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://ai-ivory-delta.vercel.app"}/api/image`, {
@@ -122,7 +109,7 @@ return NextResponse.json({
       thumbnailUrl = thumbData.url || "";
     } catch {}
 
-    // Step 5: Save to Supabase memory
+    // Step 6: Save to Supabase memory
     try {
       await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/memory`,
@@ -150,6 +137,7 @@ return NextResponse.json({
       type,
       title,
       script,
+      hashtags,
       thumbnailUrl,
       niche: channelNiche,
       language: "Hindi",
