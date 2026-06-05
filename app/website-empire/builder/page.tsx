@@ -29,6 +29,53 @@ export default function WebsiteBuilderPage() {
     setLog(prev => [`🏗️ ${new Date().toLocaleTimeString()} — ${msg}`, ...prev.slice(0, 49)]);
   }
 
+  async function buildMoneySite() {
+    if (!niche) return;
+    setLoading(true);
+    setWebsiteCode("");
+    setGeneratedPages({});
+    addLog(`💰 Building MONEY site for: ${niche}`);
+
+    try {
+      const res = await fetch("/api/website-empire/build-money-site", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ niche }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.website) {
+        setWebsiteCode(data.website);
+        addLog("✅ Money site generated!");
+        addLog("📊 Includes: AdSense, Affiliate, Email Capture, SEO, Social Share");
+        addLog("📏 Size: " + (data.website.length / 1024).toFixed(1) + " KB");
+        addLog("💡 Deploy this site to start earning!");
+        
+        // Save to Supabase
+        try {
+          await fetch("/api/website-projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: Date.now(),
+              niche: niche + " (💰 Money Site)",
+              websiteCode: data.website,
+              pages: {},
+            }),
+          });
+          addLog("✅ Saved to cloud!");
+        } catch {}
+        
+      } else {
+        addLog("❌ Failed: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      addLog("❌ Error: " + (err.message || String(err)));
+    }
+    setLoading(false);
+  }
+
   async function saveToSupabase() {
     try {
       addLog("💾 Saving to cloud database...");
@@ -54,7 +101,6 @@ export default function WebsiteBuilderPage() {
     return false;
   }
 
-  
 async function buildWebsite() {
     if (!niche) return;
     setLoading(true);
@@ -142,6 +188,15 @@ async function buildWebsite() {
     }
     setLoading(false);
   }
+  <button onClick={buildMoneySite} disabled={loading || !niche}
+  style={{
+    padding: "14px 28px", borderRadius: "12px",
+    background: loading ? "#333" : "linear-gradient(135deg, #f59e0b, #ef4444)",
+    border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px",
+  }}>
+  {loading ? "⏳ Building..." : "💰 BUILD MONEY SITE"}
+</button>
+  
   function downloadWebsite() {
     let allCode = websiteCode;
     Object.entries(generatedPages).forEach(([name, code]) => {
