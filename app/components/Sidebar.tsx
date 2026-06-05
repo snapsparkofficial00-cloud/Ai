@@ -67,30 +67,70 @@ export default function Sidebar({ onToggle }: { onToggle?: (open: boolean) => vo
         }}
       >
         {/* LOGO */}
-        <div style={{ marginBottom: "40px" }}>
-          <h1 style={{ fontSize: "34px", color: "#38bdf8", margin: 0 }}>🚀 AI OS</h1>
-          <p style={{ color: "#94a3b8", marginTop: "10px" }}>Autonomous AI Infrastructure</p>
+        <div style={{ marginBottom: "30px" }}>
+          <h1 style={{ 
+            fontSize: "28px", 
+            background: "linear-gradient(to right, #00ff88, #00aaff, #ff00ff)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            margin: 0,
+            fontWeight: "bold",
+          }}>
+            🚀 AI OS
+          </h1>
+          <p style={{ color: "#94a3b8", marginTop: "6px", fontSize: "11px" }}>
+            Autonomous AI Infrastructure
+          </p>
         </div>
 
         {/* MENU */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <MenuItem href="/" label="🏠 Dashboard" />
+          
+          {/* SECTION: AI AGENTS */}
+          <SectionLabel label="🤖 AI AGENTS" />
           <MenuItem href="/youtube" label="📺 YouTube AI" />
+          <MenuItem href="/website-empire" label="🌐 Website Empire" />
           <MenuItem href="/ceo" label="👑 CEO AI" />
           <MenuItem href="/brain" label="🧠 AI Brain" />
           <MenuItem href="/autopilot" label="🤖 Auto Pilot" />
           <MenuItem href="/assistant" label="🤖 AI Assistant" />
           <MenuItem href="/agents" label="🧠 AI Agents" />
+          
+          {/* SECTION: TOOLS */}
+          <SectionLabel label="⚡ TOOLS" />
           <MenuItem href="/storage" label="🗄️ Storage" />
           <MenuItem href="/automation" label="⚡ Automation" />
           <MenuItem href="/analytics" label="📊 Analytics" />
-          <MenuItem href="/telegram" label="📡 Telegram" />
           <MenuItem href="/memory" label="🧠 Memory" />
+          
+          {/* SECTION: CONNECTIONS */}
+          <SectionLabel label="📡 CONNECTIONS" />
+          <MenuItem href="/telegram" label="📡 Telegram" />
+          
+          {/* SECTION: BUSINESS */}
+          <SectionLabel label="💰 BUSINESS" />
           <MenuItem href="/revenue" label="💰 Revenue" />
           <MenuItem href="/settings" label="⚙️ Settings" />
         </div>
       </aside>
     </>
+  );
+}
+
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <p style={{
+      color: "#64748b",
+      fontSize: "10px",
+      fontWeight: "bold",
+      textTransform: "uppercase",
+      letterSpacing: "2px",
+      padding: "16px 18px 4px 18px",
+      margin: 0,
+    }}>
+      {label}
+    </p>
   );
 }
 
@@ -102,14 +142,23 @@ function MenuItem({ href, label }: { href: string; label: string }) {
         textDecoration: "none",
         color: "white",
         background: "#111827",
-        padding: "16px 18px",
-        borderRadius: "16px",
-        fontSize: "18px",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        fontSize: "15px",
         display: "block",
         transition: "0.2s",
+        border: "1px solid transparent",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "#1e293b";
+        e.currentTarget.style.borderColor = "#38bdf8";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "#111827";
+        e.currentTarget.style.borderColor = "transparent";
       }}
     >
       {label}
     </Link>
   );
-}
+          }
