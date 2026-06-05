@@ -1,8 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 
-
+// Main navigation tabs
 const tabs = [
+  { id: "command", label: "👑 CEO Command" },
+  { id: "income", label: "💰 Money Machine" },
+  { id: "instagram", label: "📸 Instagram" },
+  { id: "web", label: "🌐 Web & Apps" },
+  { id: "freelance", label: "💼 Freelance" },
+  { id: "affiliate", label: "🔗 Affiliate" },
+  { id: "agents", label: "🤖 Agent Factory" },
+];
+
+// Income types (used inside the "income" tab)
+const INCOME_TYPES = [
   { id: "youtube", label: "📺 YouTube", color: "#ef4444" },
   { id: "affiliate", label: "🔗 Affiliate", color: "#f97316" },
   { id: "instagram", label: "📸 Instagram", color: "#ec4899" },
