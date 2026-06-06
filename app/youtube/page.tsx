@@ -453,6 +453,28 @@ export default function YouTubeAIPage() {
         {/* SHORTS TAB */}
         {activeTab === "shorts" && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginBottom: "20px" }}>
+            <button onClick={async () => {
+  if (!activeNiche) { addLog("❌ Select a niche first!"); return; }
+  setLoading(true);
+  addLog(`🎬 Creating Shorts pack for: ${activeNiche}`);
+  try {
+    const res = await fetch("/api/create-shorts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "full-shorts-kit", niche: activeNiche }),
+    });
+    const data = await res.json();
+    setResult(JSON.stringify(data, null, 2));
+    addLog("✅ Shorts pack ready!");
+    addLog("📝 Hindi script + 🎬 Footage + 🎵 Music + #️⃣ Hashtags");
+  } catch (err: any) {
+    addLog("❌ " + err.message);
+  }
+  setLoading(false);
+}} disabled={loading}
+  style={{ padding: "16px", borderRadius: "12px", background: "#ff0000", border: "none", color: "white", fontWeight: "bold", cursor: "pointer", fontSize: "15px", marginBottom: "10px", width: "100%" }}>
+  🎬 CREATE REAL SHORTS PACK
+</button>
             <ActionBtn icon="⚡" label="5 Viral Scripts" onClick={generateShorts} color="#ff6600" />
             <ActionBtn icon="#️⃣" label="Viral Hashtags" onClick={() => runAction("hashtags")} color="#00bcd4" />
             <ActionBtn icon="🎵" label="Trending Music" onClick={() => runAction("music-suggestions")} color="#ff00ff" />
