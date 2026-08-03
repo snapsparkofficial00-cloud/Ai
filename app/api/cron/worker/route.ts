@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getMasterCEO } from "../../../../core/ceo";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export async function GET() {
+  if (!supabase) {
+    return NextResponse.json({ success: false, error: "Supabase not configured" }, { status: 500 });
+  }
+
   // 1. Pick the oldest pending task
   const { data: task, error } = await supabase
     .from("task_queue")
