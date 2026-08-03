@@ -1,3 +1,5 @@
+import { invalidateMemoryCache } from "../../../core/memory";
+
 interface Memory {
   id: string;
   type: "success" | "failure" | "learning" | "strategy";
@@ -10,6 +12,8 @@ interface Memory {
 let memoryStore: Memory[] = [];
 
 export async function saveMemory(type: Memory["type"], content: string, score: number, metadata: Record<string, any> = {}): Promise<void> {
+  // Invalidate in-memory database cache immediately on mutation path to ensure consistency
+  invalidateMemoryCache();
   const memory: Memory = {
     id: Date.now().toString(),
     type,
