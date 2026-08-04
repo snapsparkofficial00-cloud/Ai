@@ -7,9 +7,14 @@ interface Memory {
   metadata: Record<string, any>;
 }
 
+import { invalidateMemoryCache } from "../../../core/memory";
+
 let memoryStore: Memory[] = [];
 
 export async function saveMemory(type: Memory["type"], content: string, score: number, metadata: Record<string, any> = {}): Promise<void> {
+  // ⚡ Trigger immediate cache invalidation on any mutation path
+  invalidateMemoryCache();
+
   const memory: Memory = {
     id: Date.now().toString(),
     type,
