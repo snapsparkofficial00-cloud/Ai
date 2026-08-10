@@ -1,3 +1,5 @@
+import { invalidateMemoryCache } from "../../../core/memory";
+
 interface Memory {
   id: string;
   type: "success" | "failure" | "learning" | "strategy";
@@ -41,7 +43,15 @@ export async function saveMemory(type: Memory["type"], content: string, score: n
         model: "autonomous",
         created_at: new Date().toISOString(),
       }),
-    }).catch(() => {});
+    })
+      .then(() => {
+        try {
+          invalidateMemoryCache();
+        } catch (e) {
+          console.error("Failed to invalidate memory cache:", e);
+        }
+      })
+      .catch(() => {});
   }
   
   console.log(`🧠 Memory saved: ${type} - ${content.slice(0, 50)}...`);

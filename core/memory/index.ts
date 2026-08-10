@@ -8,6 +8,16 @@ type MemoryInput = {
 
 };
 
+// 30-second TTL in-memory cache for memory retrieval system
+let memoryCache: any[] | null = null;
+let lastCacheTimestamp: number = 0;
+const CACHE_TTL_MS = 30000; // 30 seconds
+
+export function invalidateMemoryCache() {
+  memoryCache = null;
+  lastCacheTimestamp = 0;
+}
+
 export async function MemoryAI(
   input: MemoryInput
 ) {
@@ -55,6 +65,9 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       }
     );
 
+    // Immediate cache invalidation on mutation success
+    invalidateMemoryCache();
+
     return {
 
       success: true,
@@ -84,11 +97,22 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 
 export async function GetMemory() {
 
+  const now = Date.now();
+  if (memoryCache && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
+    return memoryCache;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    return [];
+  }
+
   try {
 
     const response =
       await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/memory?select=*`,
+        `${supabaseUrl}/rest/v1/memory?select=*`,
         {
 
           headers: {
@@ -106,6 +130,10 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 
     const data =
       await response.json();
+
+    // Cache the response with current timestamp on success
+    memoryCache = data;
+    lastCacheTimestamp = now;
 
     return data;
 

@@ -2,14 +2,25 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getMasterCEO } from "../../../../core/ceo";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = "force-dynamic";
+
+let supabaseInstance: any = null;
+
+function getSupabase(): any {
+  if (!supabaseInstance) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error("Supabase environment variables are missing");
+    }
+    supabaseInstance = createClient(url, key);
+  }
+  return supabaseInstance;
+}
 
 export async function GET() {
   // 1. Pick the oldest pending task
-  const { data: task, error } = await supabase
+  const { data: task, error } = await getSupabase()
     .from("task_queue")
     .select("*")
     .eq("status", "pending")
@@ -22,7 +33,7 @@ export async function GET() {
   }
 
   // 2. Mark as processing
-  await supabase
+  await getSupabase()
     .from("task_queue")
     .update({ status: "processing", started_at: new Date().toISOString() })
     .eq("id", task.id);
@@ -60,14 +71,14 @@ export async function GET() {
     }
 
     // 3. Mark as completed
-    await supabase
+    await getSupabase()
       .from("task_queue")
       .update({ status: "completed", finished_at: new Date().toISOString(), result: JSON.stringify(result) })
       .eq("id", task.id);
 
   } catch (err) {
     const attempts = (task.attempts || 0) + 1;
-    await supabase
+    await getSupabase()
       .from("task_queue")
       .update({
         status: attempts >= 3 ? "failed" : "pending",
