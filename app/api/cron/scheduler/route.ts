@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = "force-dynamic";
+
+let supabaseInstance: any = null;
+
+function getSupabase(): any {
+  if (!supabaseInstance) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error("Supabase environment variables are missing");
+    }
+    supabaseInstance = createClient(url, key);
+  }
+  return supabaseInstance;
+}
 
 export async function GET() {
   // 1. Determine what needs to be generated based on your schedule
@@ -13,7 +24,7 @@ export async function GET() {
   const lastEmpire = await getLastGenerated("empire"); // ← new
   const now = Date.now();
 
-  const tasks = [];
+  const tasks: { type: string; payload: any }[] = [];
 
   if (now - lastShort > 2 * 24 * 60 * 60 * 1000) {
     tasks.push({
@@ -38,7 +49,7 @@ export async function GET() {
 
   // 2. Insert tasks into the queue (only if not already pending)
   for (const task of tasks) {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from("task_queue")
       .insert({ type: task.type, payload: task.payload, status: "pending" });
     if (error) console.error("Insert error", error);
@@ -56,7 +67,7 @@ export async function GET() {
 }
 
 async function getLastGenerated(type: string): Promise<number> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("settings")
     .select("value")
     .eq("key", `last_${type}_generated`)
@@ -65,7 +76,7 @@ async function getLastGenerated(type: string): Promise<number> {
 }
 
 async function updateLastGenerated(type: string, timestamp: number) {
-  await supabase
+  await getSupabase()
     .from("settings")
     .upsert({ key: `last_${type}_generated`, value: timestamp }, { onConflict: "key" });
 }

@@ -1,6 +1,8 @@
 import { NextResponse }
 from "next/server";
 
+export const dynamic = "force-dynamic";
+
 import { workflowEngine }
 from "../../../core/runtime/workflow-engine";
 
